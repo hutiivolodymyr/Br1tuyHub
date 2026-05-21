@@ -11,6 +11,8 @@ function App() {
 
     return savedCart ? JSON.parse(savedCart) : [];
 });
+
+const [orders, setOrders] = useState([]);
     const fetchMe = async () => {
     try {
         const response = await axios.get(
@@ -51,6 +53,7 @@ function App() {
 
     if (token) {
         fetchMe();
+        fetchMyOrders();
     }
 }, []);
 useEffect(() => {
@@ -140,6 +143,66 @@ const totalPrice = cart.reduce(
     (sum, item) => sum + Number(item.price) * item.quantity,
     0
 );
+const fetchMyOrders = async () => {
+    try {
+        const response = await axios.get(
+            "http://localhost:5000/api/orders/my",
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        setOrders(response.data.orders);
+    } catch (error) {
+        console.error(error);
+    }
+};
+const handleCheckout = async () => {
+    try {
+        if (!token) {
+            alert("Спочатку увійдіть в акаунт");
+            return;
+        }
+
+        if (cart.length === 0) {
+            alert("Кошик порожній");
+            return;
+        }
+
+        const supplier_id = cart[0].supplier_id;
+
+        const items = cart.map((item) => ({
+            product_id: item.id,
+            quantity: item.quantity,
+        }));
+
+        const response = await axios.post(
+            "http://localhost:5000/api/orders",
+            {
+                supplier_id,
+                items,
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        console.log(response.data);
+
+        alert("Замовлення успішно створено!");
+
+        setCart([]);
+        localStorage.removeItem("cart");
+        fetchMyOrders();
+    } catch (error) {
+        console.error(error);
+        alert("Помилка при оформленні замовлення");
+    }
+};
     return (
         <div className="app">
             <div className="navbar">
@@ -298,6 +361,9 @@ const totalPrice = cart.reduce(
             ))}
 
             <h3>Разом: {totalPrice} грн</h3>
+            <button onClick={handleCheckout}>
+    Оформити замовлення
+</button>
         </>
     )}
 </div>
