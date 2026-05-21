@@ -2,7 +2,7 @@ const pool = require("../db");
 
 const createProduct = async (req, res) => {
     try {
-        const {
+        let {
             category_id,
             name,
             description,
@@ -11,6 +11,10 @@ const createProduct = async (req, res) => {
             quantity_available,
             image_url,
         } = req.body;
+
+        if (req.file) {
+            image_url = `/uploads/${req.file.filename}`;
+        }
 
         const supplier_id = req.user.id;
 

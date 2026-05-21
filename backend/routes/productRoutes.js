@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const upload = require("../middleware/uploadMiddleware");
 
 const authMiddleware = require("../middleware/authMiddleware");
 const roleMiddleware = require("../middleware/roleMiddleware");
@@ -20,6 +21,7 @@ router.post(
     "/",
     authMiddleware,
     roleMiddleware("supplier", "admin"),
+    upload.single("image"),
     createProduct
 );
 

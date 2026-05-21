@@ -10,18 +10,18 @@ const productRoutes = require("./routes/productRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const path = require("path");
 
+
 app.use(cors());
 app.use(express.json());
 
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/pdfs", express.static(path.join(__dirname, "pdfs")));
+
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
-app.use(express.json());
-
-app.use("/pdfs", express.static("pdfs"));
 
 app.get("/", (req, res) => {
     res.send("Br1tuyHub API працює");
