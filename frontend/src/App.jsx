@@ -6,7 +6,31 @@ function App() {
     const [mode, setMode] = useState("login");
     const [token, setToken] = useState(localStorage.getItem("token") || "");
     const [user, setUser] = useState(null);
+    const [cart, setCart] = useState(() => {
+    const savedCart = localStorage.getItem("cart");
 
+    return savedCart ? JSON.parse(savedCart) : [];
+});
+    const fetchMe = async () => {
+    try {
+        const response = await axios.get(
+            "http://localhost:5000/api/auth/me",
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        setUser(response.data.user);
+
+    } catch (error) {
+        console.error(error);
+
+        localStorage.removeItem("token");
+        setToken("");
+    }
+};
     const [companyName, setCompanyName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -23,8 +47,15 @@ function App() {
     };
 
     useEffect(() => {
-        fetchProducts();
-    }, []);
+    fetchProducts();
+
+    if (token) {
+        fetchMe();
+    }
+}, []);
+useEffect(() => {
+    localStorage.setItem("cart", JSON.stringify(cart));
+}, [cart]);
 
     const handleRegister = async (e) => {
         e.preventDefault();
@@ -85,7 +116,30 @@ function App() {
 
         fetchProducts();
     };
+const addToCart = (product) => {
+    const existingItem = cart.find((item) => item.id === product.id);
 
+    if (existingItem) {
+        setCart(
+            cart.map((item) =>
+                item.id === product.id
+                    ? { ...item, quantity: item.quantity + 1 }
+                    : item
+            )
+        );
+    } else {
+        setCart([...cart, { ...product, quantity: 1 }]);
+    }
+};
+
+const removeFromCart = (productId) => {
+    setCart(cart.filter((item) => item.id !== productId));
+};
+
+const totalPrice = cart.reduce(
+    (sum, item) => sum + Number(item.price) * item.quantity,
+    0
+);
     return (
         <div className="app">
             <div className="navbar">
@@ -193,27 +247,61 @@ function App() {
 
                 <h2>Products</h2>
 
-                <div className="products-grid">
-                    {products.map((product) => (
-                        <div className="product-card" key={product.id}>
-                            {product.image_url && (
-                                <img
-                                    src={`http://localhost:5000${product.image_url}`}
-                                    alt={product.name}
-                                />
-                            )}
+<div className="products-grid">
+    {products.map((product) => (
+        <div className="product-card" key={product.id}>
+            {product.image_url && (
+                <img
+                    src={`http://localhost:5000${product.image_url}`}
+                    alt={product.name}
+                />
+            )}
 
-                            <div className="product-info">
-                                <h3>{product.name}</h3>
-                                <p>{product.description}</p>
-                                <p className="price">
-                                    {product.price} грн / {product.unit}
-                                </p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+            <div className="product-info">
+                <h3>{product.name}</h3>
+
+                <p>{product.description}</p>
+
+                <p className="price">
+                    {product.price} грн / {product.unit}
+                </p>
+
+                <button onClick={() => addToCart(product)}>
+                    Додати в кошик
+                </button>
             </div>
+        </div>
+    ))}
+</div>
+
+<div className="cart-card">
+    <h2>Кошик</h2>
+
+    {cart.length === 0 ? (
+        <p>Кошик порожній</p>
+    ) : (
+        <>
+            {cart.map((item) => (
+                <div className="cart-item" key={item.id}>
+                    <span>
+                        {item.name} × {item.quantity}
+                    </span>
+
+                    <span>
+                        {Number(item.price) * item.quantity} грн
+                    </span>
+
+                    <button onClick={() => removeFromCart(item.id)}>
+                        Видалити
+                    </button>
+                </div>
+            ))}
+
+            <h3>Разом: {totalPrice} грн</h3>
+        </>
+    )}
+</div>
+</div>
         </div>
     );
 }

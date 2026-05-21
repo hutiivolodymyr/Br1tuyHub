@@ -97,3 +97,26 @@ body {
     border-radius: 8px;
     cursor: pointer;
 }
+.cart-item {
+    display: grid;
+    grid-template-columns: 1fr 100px 90px;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.cart-item span:nth-child(2) {
+    font-weight: bold;
+    color: #2563eb;
+    text-align: right;
+}
+
+.cart-item button {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+}
