@@ -1,37 +1,36 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Routes, Route, Link } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import "./App.css";
+import ProductDetailsPage from "./pages/ProductDetailsPage";
 import Navbar from "./components/Navbar";
-import ProductCard from "./components/ProductCard";
-import Cart from "./components/Cart";
+import ProtectedRoute from "./components/ProtectedRoute";
+import RoleProtectedRoute from "./components/RoleProtectedRoute";
+import FavoritesPage from "./pages/FavoritesPage";
 import HomePage from "./pages/HomePage";
 import OrdersPage from "./pages/OrdersPage";
+import SupplierDashboard from "./pages/SupplierDashboard";
+import BusinessDashboard from "./pages/BusinessDashboard";
+import OrderDetailsPage from "./pages/OrderDetailsPage";
+import Cart from "./components/Cart";
+
 import { useAuth } from "./contexts/AuthContext";
 import { useCart } from "./contexts/CartContext";
 
-
-
 function App() {
+    const { token, user, setUser, login, logout } = useAuth();
+
     const {
-    token,
-    user,
-    setUser,
-    login,
-    logout,
-} = useAuth();
-const {
-    cart,
-    setCart,
-    addToCart,
-    removeFromCart,
-    clearCart,
-    totalPrice,
-} = useCart();
+        cart,
+        addToCart,
+        removeFromCart,
+        clearCart,
+        totalPrice,
+        increaseQuantity,
+        decreaseQuantity,
+    } = useCart();
+
     const [mode, setMode] = useState("login");
-
-
-
     const [orders, setOrders] = useState([]);
 
     const [companyName, setCompanyName] = useState("");
@@ -42,6 +41,8 @@ const {
     const [name, setName] = useState("");
     const [price, setPrice] = useState("");
     const [image, setImage] = useState(null);
+    const [unit, setUnit] = useState("кг");
+    const [quantityAvailable, setQuantityAvailable] = useState("");
     const [products, setProducts] = useState([]);
 
     const fetchProducts = async () => {
@@ -60,9 +61,7 @@ const {
             setUser(response.data.user);
         } catch (error) {
             console.error(error);
-            localStorage.removeItem("token");
-            setToken("");
-            setUser(null);
+            logout();
         }
     };
 
@@ -91,8 +90,6 @@ const {
         }
     }, [token]);
 
-
-
     const handleRegister = async (e) => {
         e.preventDefault();
 
@@ -109,18 +106,16 @@ const {
         setMode("login");
     };
 
-const handleLogin = async (e) => {
-    e.preventDefault();
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        await login(email, password);
+    };
 
-    await login(email, password);
-};
-
-const handleLogout = () => {
-    logout();
-
-clearCart();
-    setOrders([]);
-};
+    const handleLogout = () => {
+        logout();
+        clearCart();
+        setOrders([]);
+    };
 
     const handleCreateProduct = async (e) => {
         e.preventDefault();
@@ -130,8 +125,8 @@ clearCart();
         formData.append("name", name);
         formData.append("description", "Тест");
         formData.append("price", price);
-        formData.append("unit", "кг");
-        formData.append("quantity_available", 10);
+        formData.append("unit", unit);
+        formData.append("quantity_available", quantityAvailable);
 
         if (image) {
             formData.append("image", image);
@@ -185,58 +180,191 @@ clearCart();
 
             alert("Замовлення успішно створено!");
 
-clearCart();
+            clearCart();
             fetchMyOrders();
+            fetchProducts();
         } catch (error) {
             console.error(error);
             alert("Помилка при оформленні замовлення");
         }
     };
 
+    const deleteProduct = async (productId) => {
+        try {
+            await axios.delete(`http://localhost:5000/api/products/${productId}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            fetchProducts();
+        } catch (error) {
+            console.error(error);
+            alert("Помилка при видаленні товару");
+        }
+    };
+
+    const updateProduct = async (productId, updatedData) => {
+        try {
+            await axios.put(
+                `http://localhost:5000/api/products/${productId}`,
+                updatedData,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            fetchProducts();
+        } catch (error) {
+            console.error(error);
+            alert("Помилка при редагуванні товару");
+        }
+    };
+
+    const updateOrderStatus = async (orderId, status) => {
+        try {
+            await axios.put(
+                `http://localhost:5000/api/orders/${orderId}/status`,
+                { status },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            fetchMyOrders();
+        } catch (error) {
+            console.error(error);
+            alert("Помилка при зміні статусу замовлення");
+        }
+    };
+
     return (
         <div className="app">
-<Navbar
-    token={token}
-    user={user}
-    handleLogout={handleLogout}
-/>  
+            <Navbar token={token} user={user} handleLogout={handleLogout} />
 
-<div className="container">
-    <Routes>
-        <Route
-            path="/"
-            element={
-                <HomePage
-                    token={token}
-                    user={user}
-                    mode={mode}
-                    setMode={setMode}
-                    handleRegister={handleRegister}
-                    handleLogin={handleLogin}
-                    setCompanyName={setCompanyName}
-                    setEmail={setEmail}
-                    setPassword={setPassword}
-                    setRole={setRole}
-                    handleCreateProduct={handleCreateProduct}
-                    setName={setName}
-                    setPrice={setPrice}
-                    setImage={setImage}
-                    products={products}
-                    addToCart={addToCart}
-                    cart={cart}
-                    totalPrice={totalPrice}
-                    removeFromCart={removeFromCart}
-                    handleCheckout={handleCheckout}
-                />
-            }
-        />
-
-<Route
-    path="/orders"
-    element={<OrdersPage orders={orders} />}
+            <div className="container">
+                <Routes>
+                    <Route
+                        path="/"
+                        element={
+                            <HomePage
+                                token={token}
+                                user={user}
+                                mode={mode}
+                                setMode={setMode}
+                                handleRegister={handleRegister}
+                                handleLogin={handleLogin}
+                                setCompanyName={setCompanyName}
+                                setEmail={setEmail}
+                                setPassword={setPassword}
+                                setRole={setRole}
+                                handleCreateProduct={handleCreateProduct}
+                                setName={setName}
+                                setPrice={setPrice}
+                                setImage={setImage}
+                                setUnit={setUnit}
+                                setQuantityAvailable={setQuantityAvailable}
+                                products={products}
+                                addToCart={addToCart}
+                                cart={cart}
+                                totalPrice={totalPrice}
+                                removeFromCart={removeFromCart}
+                                increaseQuantity={increaseQuantity}
+                                decreaseQuantity={decreaseQuantity}
+                                handleCheckout={handleCheckout}
+                            />
+                        }
+                    />
+                    <Route
+                        path="/products/:id"
+                        element={<ProductDetailsPage />}
+                    />
+                    <Route
+    path="/cart"
+    element={
+        <ProtectedRoute token={token}>
+            <RoleProtectedRoute user={user} allowedRoles={["business"]}>
+                <div className="cart-page">
+                    <Cart
+                        cart={cart}
+                        totalPrice={totalPrice}
+                        removeFromCart={removeFromCart}
+                        increaseQuantity={increaseQuantity}
+                        decreaseQuantity={decreaseQuantity}
+                        handleCheckout={handleCheckout}
+                    />
+                </div>
+            </RoleProtectedRoute>
+        </ProtectedRoute>
+    }
 />
-    </Routes>
-</div>
+                    <Route
+                        path="/favorites"
+                        element={
+                            <ProtectedRoute token={token}>
+                            <RoleProtectedRoute user={user} allowedRoles={["business"]}>
+                            <FavoritesPage />
+                            </RoleProtectedRoute>
+                            </ProtectedRoute>
+    }
+/>
+                    <Route
+                        path="/business"
+                        element={
+                            <ProtectedRoute token={token}>
+                                <RoleProtectedRoute user={user} allowedRoles={["business"]}>
+                                    <BusinessDashboard orders={orders} />
+                                </RoleProtectedRoute>
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/orders"
+                        element={
+                            <ProtectedRoute token={token}>
+                                <RoleProtectedRoute
+                                    user={user}
+                                    allowedRoles={["business", "supplier"]}
+                                >
+                                    <OrdersPage orders={orders} />
+                                </RoleProtectedRoute>
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/orders/:id"
+                        element={
+                            <ProtectedRoute token={token}>
+                                <OrderDetailsPage />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/supplier"
+                        element={
+                            <ProtectedRoute token={token}>
+                                <RoleProtectedRoute user={user} allowedRoles={["supplier"]}>
+                                    <SupplierDashboard
+                                        products={products}
+                                        user={user}
+                                        orders={orders}
+                                        deleteProduct={deleteProduct}
+                                        updateProduct={updateProduct}
+                                        updateOrderStatus={updateOrderStatus}
+                                    />
+                                </RoleProtectedRoute>
+                            </ProtectedRoute>
+                        }
+                    />
+                </Routes>
+            </div>
         </div>
     );
 }

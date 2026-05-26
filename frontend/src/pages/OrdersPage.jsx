@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 function OrdersPage({ orders }) {
     return (
         <div className="cart-card">
@@ -8,7 +9,9 @@ function OrdersPage({ orders }) {
             ) : (
                 orders.map((order) => (
                     <div className="cart-item" key={order.id}>
-                        <span>Замовлення #{order.id}</span>
+                        <Link to={`/orders/${order.id}`}>
+    Замовлення #{order.id}
+</Link>
                         <span>{order.total_price} грн</span>
                         <span>{order.status}</span>
                     </div>

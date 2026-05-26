@@ -1,6 +1,18 @@
+import { Link } from "react-router-dom";
+import { useFavorites } from "../contexts/FavoritesContext";
+
 function ProductCard({ product, user, addToCart }) {
+    const { toggleFavorite, isFavorite } = useFavorites();
+
     return (
         <div className="product-card">
+            <button
+                className="favorite-icon"
+                onClick={() => toggleFavorite(product)}
+            >
+                {isFavorite(product.id) ? "❤️" : "🤍"}
+            </button>
+
             {product.image_url && (
                 <img
                     src={`http://localhost:5000${product.image_url}`}
@@ -9,7 +21,9 @@ function ProductCard({ product, user, addToCart }) {
             )}
 
             <div className="product-info">
-                <h3>{product.name}</h3>
+                <Link to={`/products/${product.id}`}>
+                    <h3>{product.name}</h3>
+                </Link>
 
                 <p>{product.description}</p>
 

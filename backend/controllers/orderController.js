@@ -28,7 +28,11 @@ const createOrder = async (req, res) => {
                     message: `Product with id ${item.product_id} not found`,
                 });
             }
-
+if (product.rows[0].quantity_available < item.quantity) {
+    return res.status(400).json({
+        message: `Not enough quantity for product ${item.product_id}`,
+    });
+}
             const price = Number(product.rows[0].price);
             const subtotal = price * item.quantity;
 
@@ -52,20 +56,28 @@ const createOrder = async (req, res) => {
 
         const order_id = newOrder.rows[0].id;
 
-        for (const item of orderItemsData) {
-            await pool.query(
-                `INSERT INTO order_items
-                (order_id, product_id, quantity, price, subtotal)
-                VALUES ($1, $2, $3, $4, $5)`,
-                [
-                    order_id,
-                    item.product_id,
-                    item.quantity,
-                    item.price,
-                    item.subtotal,
-                ]
-            );
-        }
+for (const item of orderItemsData) {
+    await pool.query(
+        `INSERT INTO order_items
+        (order_id, product_id, quantity, price, subtotal)
+        VALUES ($1, $2, $3, $4, $5)`,
+        [
+            order_id,
+            item.product_id,
+            item.quantity,
+            item.price,
+            item.subtotal,
+        ]
+    );
+
+    await pool.query(
+        `UPDATE products
+         SET quantity_available = quantity_available - $1
+         WHERE id = $2`,
+        [item.quantity, item.product_id]
+    );
+}
+
 
         res.status(201).json({
             message: "Order created successfully",
@@ -241,9 +253,53 @@ const updatedOrder = await pool.query(
         });
     }
 };
+const getOrderDetails = async (req, res) => {
+    try {
+        const { id } = req.params;
 
+        const order = await pool.query(
+            `SELECT *
+             FROM orders
+             WHERE id = $1`,
+            [id]
+        );
+
+        if (order.rows.length === 0) {
+            return res.status(404).json({
+                message: "Order not found",
+            });
+        }
+
+        const items = await pool.query(
+            `SELECT 
+                order_items.id,
+                order_items.quantity,
+                order_items.price,
+                order_items.subtotal,
+                products.name,
+                products.unit,
+                products.image_url
+             FROM order_items
+             JOIN products ON order_items.product_id = products.id
+             WHERE order_items.order_id = $1`,
+            [id]
+        );
+
+        res.json({
+            order: order.rows[0],
+            items: items.rows,
+        });
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: "Server error",
+        });
+    }
+};
 module.exports = {
     createOrder,
     getMyOrders,
     updateOrderStatus,
+    getOrderDetails,
 };

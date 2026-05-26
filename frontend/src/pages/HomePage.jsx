@@ -1,3 +1,4 @@
+import { useState } from "react";
 import ProductCard from "../components/ProductCard";
 import Cart from "../components/Cart";
 
@@ -21,8 +22,30 @@ function HomePage({
     cart,
     totalPrice,
     removeFromCart,
+    increaseQuantity,
+    decreaseQuantity,
     handleCheckout,
+    setUnit,
+    setQuantityAvailable,
 }) {
+    const [search, setSearch] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState("all");
+    const filteredProducts = products.filter((product) => {
+    const matchesSearch = product.name
+        .toLowerCase()
+        .includes(search.toLowerCase());
+
+    const matchesCategory =
+        selectedCategory === "all" ||
+        product.category_name === selectedCategory;
+
+    return matchesSearch && matchesCategory;
+});
+
+const categories = [
+    "all",
+    ...new Set(products.map((product) => product.category_name).filter(Boolean)),
+];
     return (
         <>
             {!token && (
@@ -104,7 +127,19 @@ function HomePage({
                                     placeholder="Ціна"
                                     onChange={(e) => setPrice(e.target.value)}
                                 />
+                                <select onChange={(e) => setUnit(e.target.value)}>
+                                <option value="кг">за кг</option>
+                                <option value="100 г">за 100 г</option>
+                                <option value="шт">за штуку</option>
+                                <option value="л">за літр</option>
+                                <option value="упаковка">за упаковку</option>
+                            </select>
 
+                        <input
+    type="number"
+    placeholder="Кількість в наявності"
+    onChange={(e) => setQuantityAvailable(e.target.value)}
+/>
                                 <input
                                     type="file"
                                     onChange={(e) => setImage(e.target.files[0])}
@@ -118,9 +153,28 @@ function HomePage({
             )}
 
             <h2>Products</h2>
+            <div className="filters">
+    <input
+        type="text"
+        placeholder="Пошук товару..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+    />
+
+    <select
+        value={selectedCategory}
+        onChange={(e) => setSelectedCategory(e.target.value)}
+    >
+        {categories.map((category) => (
+            <option key={category} value={category}>
+                {category === "all" ? "Усі категорії" : category}
+            </option>
+        ))}
+    </select>
+</div>
 
             <div className="products-grid">
-                {products.map((product) => (
+                {filteredProducts.map((product) => (
                     <ProductCard
                         key={product.id}
                         product={product}
@@ -131,12 +185,14 @@ function HomePage({
             </div>
 
             {user?.role === "business" && (
-                <Cart
-                    cart={cart}
-                    totalPrice={totalPrice}
-                    removeFromCart={removeFromCart}
-                    handleCheckout={handleCheckout}
-                />
+<Cart
+    cart={cart}
+    totalPrice={totalPrice}
+    removeFromCart={removeFromCart}
+    handleCheckout={handleCheckout}
+    increaseQuantity={increaseQuantity}
+    decreaseQuantity={decreaseQuantity}
+/>
             )}
         </>
     );

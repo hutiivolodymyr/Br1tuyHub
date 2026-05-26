@@ -1,11 +1,10 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
-const CartContext = createContext();
+const CartContext = createContext(null);
 
-export const CartProvider = ({ children }) => {
+export function CartProvider({ children }) {
     const [cart, setCart] = useState(() => {
         const savedCart = localStorage.getItem("cart");
-
         return savedCart ? JSON.parse(savedCart) : [];
     });
 
@@ -33,6 +32,26 @@ export const CartProvider = ({ children }) => {
         setCart(cart.filter((item) => item.id !== productId));
     };
 
+    const increaseQuantity = (productId) => {
+        setCart(
+            cart.map((item) =>
+                item.id === productId
+                    ? { ...item, quantity: item.quantity + 1 }
+                    : item
+            )
+        );
+    };
+
+    const decreaseQuantity = (productId) => {
+        setCart(
+            cart.map((item) =>
+                item.id === productId && item.quantity > 1
+                    ? { ...item, quantity: item.quantity - 1 }
+                    : item
+            )
+        );
+    };
+
     const clearCart = () => {
         setCart([]);
         localStorage.removeItem("cart");
@@ -50,6 +69,8 @@ export const CartProvider = ({ children }) => {
                 setCart,
                 addToCart,
                 removeFromCart,
+                increaseQuantity,
+                decreaseQuantity,
                 clearCart,
                 totalPrice,
             }}
@@ -57,8 +78,8 @@ export const CartProvider = ({ children }) => {
             {children}
         </CartContext.Provider>
     );
-};
+}
 
-export const useCart = () => {
+export function useCart() {
     return useContext(CartContext);
-};
+}

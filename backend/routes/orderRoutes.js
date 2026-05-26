@@ -8,6 +8,7 @@ const {
     createOrder,
     getMyOrders,
     updateOrderStatus,
+    getOrderDetails,
 } = require("../controllers/orderController");
 
 router.post(
@@ -21,6 +22,12 @@ router.get(
     "/my",
     authMiddleware,
     getMyOrders
+);
+
+router.get(
+    "/:id",
+    authMiddleware,
+    getOrderDetails
 );
 
 router.put(
