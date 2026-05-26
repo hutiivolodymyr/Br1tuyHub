@@ -120,3 +120,18 @@ body {
     border-radius: 8px;
     cursor: pointer;
 }
+.logo {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.nav-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.nav-info span {
+    font-size: 14px;
+    color: #e5e7eb;
+}
