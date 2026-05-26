@@ -13,6 +13,7 @@ import SupplierDashboard from "./pages/SupplierDashboard";
 import BusinessDashboard from "./pages/BusinessDashboard";
 import OrderDetailsPage from "./pages/OrderDetailsPage";
 import Cart from "./components/Cart";
+import { toast } from "react-toastify";
 
 import { useAuth } from "./contexts/AuthContext";
 import { useCart } from "./contexts/CartContext";
@@ -102,7 +103,7 @@ function App() {
             role,
         });
 
-        alert("Реєстрація успішна. Тепер увійди.");
+        toast.success("Реєстрація успішна");
         setMode("login");
     };
 
@@ -178,14 +179,14 @@ function App() {
                 }
             );
 
-            alert("Замовлення успішно створено!");
+            toast.success("Замовлення успішно створено");
 
             clearCart();
             fetchMyOrders();
             fetchProducts();
         } catch (error) {
             console.error(error);
-            alert("Помилка при оформленні замовлення");
+            toast.error("Помилка при оформленні замовлення");
         }
     };
 
@@ -200,7 +201,7 @@ function App() {
             fetchProducts();
         } catch (error) {
             console.error(error);
-            alert("Помилка при видаленні товару");
+            toast.error("Помилка при видаленні товару");
         }
     };
 
@@ -219,7 +220,7 @@ function App() {
             fetchProducts();
         } catch (error) {
             console.error(error);
-            alert("Помилка при редагуванні товару");
+            toast.error("Помилка при редагуванні товару");
         }
     };
 
@@ -238,7 +239,7 @@ function App() {
             fetchMyOrders();
         } catch (error) {
             console.error(error);
-            alert("Помилка при зміні статусу замовлення");
+            toast.error("Помилка при зміні статусу");
         }
     };
 

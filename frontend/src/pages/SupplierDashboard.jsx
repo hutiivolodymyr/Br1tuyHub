@@ -19,6 +19,14 @@ const [editUnit, setEditUnit] = useState("кг");
     const supplierOrders = orders.filter(
     (order) => order.supplier_id === user?.id
 );
+const totalProducts = myProducts.length;
+
+const totalOrders = supplierOrders.length;
+
+const totalRevenue = supplierOrders.reduce(
+    (sum, order) => sum + Number(order.total_price),
+    0
+);
 
     const startEdit = (product) => {
         setEditingId(product.id);
@@ -46,6 +54,22 @@ const [editUnit, setEditUnit] = useState("кг");
         <div>
             <h2>Кабінет постачальника</h2>
 
+<div className="stats-grid">
+    <div className="stat-card">
+        <h3>{totalProducts}</h3>
+        <p>Товарів</p>
+    </div>
+
+    <div className="stat-card">
+        <h3>{totalOrders}</h3>
+        <p>Замовлень</p>
+    </div>
+
+    <div className="stat-card">
+        <h3>{totalRevenue} грн</h3>
+        <p>Загальна сума</p>
+    </div>
+</div>
             <div className="cart-card">
                 <h3>Мої товари</h3>
 

@@ -4,6 +4,7 @@ import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../contexts/CartContext";
 import { Link } from "react-router-dom";
+import Loader from "../components/Loader";
 
 function ProductDetailsPage() {
     const { id } = useParams();
@@ -40,9 +41,9 @@ function ProductDetailsPage() {
         fetchProduct();
     }, [id]);
 
-    if (!product) {
-        return <p>Loading...</p>;
-    }
+if (!product) {
+    return <Loader />;
+}
 
     return (
         <>
