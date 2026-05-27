@@ -1,19 +1,21 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Routes, Route } from "react-router-dom";
+import { toast } from "react-toastify";
 import "./App.css";
-import ProductDetailsPage from "./pages/ProductDetailsPage";
+
 import Navbar from "./components/Navbar";
+import Cart from "./components/Cart";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RoleProtectedRoute from "./components/RoleProtectedRoute";
-import FavoritesPage from "./pages/FavoritesPage";
+
 import HomePage from "./pages/HomePage";
+import ProductDetailsPage from "./pages/ProductDetailsPage";
 import OrdersPage from "./pages/OrdersPage";
+import OrderDetailsPage from "./pages/OrderDetailsPage";
 import SupplierDashboard from "./pages/SupplierDashboard";
 import BusinessDashboard from "./pages/BusinessDashboard";
-import OrderDetailsPage from "./pages/OrderDetailsPage";
-import Cart from "./components/Cart";
-import { toast } from "react-toastify";
+import FavoritesPage from "./pages/FavoritesPage";
 
 import { useAuth } from "./contexts/AuthContext";
 import { useCart } from "./contexts/CartContext";
@@ -145,17 +147,17 @@ function App() {
     const handleCheckout = async () => {
         try {
             if (!token) {
-                alert("Спочатку увійдіть в акаунт");
+                toast.error("Спочатку увійдіть в акаунт");
                 return;
             }
 
             if (user?.role !== "business") {
-                alert("Оформлювати замовлення може тільки бізнес-користувач");
+                toast.error("Оформлювати замовлення може тільки бізнес-користувач");
                 return;
             }
 
             if (cart.length === 0) {
-                alert("Кошик порожній");
+                toast.error("Кошик порожній");
                 return;
             }
 
@@ -244,15 +246,22 @@ function App() {
     };
 
     return (
-        <div className="app">
-            <Navbar token={token} user={user} handleLogout={handleLogout} />
+        <div className={token ? "app" : "app auth-app"}>
+            {token && (
+                <Navbar
+                    token={token}
+                    user={user}
+                    handleLogout={handleLogout}
+                />
+            )}
 
-            <div className="container">
+            <div className={token ? "container" : "auth-container"}>
                 <Routes>
                     <Route
                         path="/"
                         element={
                             <HomePage
+                                role={role}
                                 token={token}
                                 user={user}
                                 mode={mode}
@@ -280,39 +289,43 @@ function App() {
                             />
                         }
                     />
+
                     <Route
                         path="/products/:id"
                         element={<ProductDetailsPage />}
                     />
+
                     <Route
-    path="/cart"
-    element={
-        <ProtectedRoute token={token}>
-            <RoleProtectedRoute user={user} allowedRoles={["business"]}>
-                <div className="cart-page">
-                    <Cart
-                        cart={cart}
-                        totalPrice={totalPrice}
-                        removeFromCart={removeFromCart}
-                        increaseQuantity={increaseQuantity}
-                        decreaseQuantity={decreaseQuantity}
-                        handleCheckout={handleCheckout}
+                        path="/cart"
+                        element={
+                            <ProtectedRoute token={token}>
+                                <RoleProtectedRoute user={user} allowedRoles={["business"]}>
+                                    <div className="cart-page">
+                                        <Cart
+                                            cart={cart}
+                                            totalPrice={totalPrice}
+                                            removeFromCart={removeFromCart}
+                                            increaseQuantity={increaseQuantity}
+                                            decreaseQuantity={decreaseQuantity}
+                                            handleCheckout={handleCheckout}
+                                        />
+                                    </div>
+                                </RoleProtectedRoute>
+                            </ProtectedRoute>
+                        }
                     />
-                </div>
-            </RoleProtectedRoute>
-        </ProtectedRoute>
-    }
-/>
+
                     <Route
                         path="/favorites"
                         element={
                             <ProtectedRoute token={token}>
-                            <RoleProtectedRoute user={user} allowedRoles={["business"]}>
-                            <FavoritesPage />
-                            </RoleProtectedRoute>
+                                <RoleProtectedRoute user={user} allowedRoles={["business"]}>
+                                    <FavoritesPage />
+                                </RoleProtectedRoute>
                             </ProtectedRoute>
-    }
-/>
+                        }
+                    />
+
                     <Route
                         path="/business"
                         element={
@@ -359,6 +372,12 @@ function App() {
                                         deleteProduct={deleteProduct}
                                         updateProduct={updateProduct}
                                         updateOrderStatus={updateOrderStatus}
+                                        handleCreateProduct={handleCreateProduct}
+                                        setName={setName}
+                                        setPrice={setPrice}
+                                        setImage={setImage}
+                                        setUnit={setUnit}
+                                        setQuantityAvailable={setQuantityAvailable}
                                     />
                                 </RoleProtectedRoute>
                             </ProtectedRoute>
