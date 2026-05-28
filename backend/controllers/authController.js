@@ -6,6 +6,14 @@ const register = async (req, res) => {
     try {
         const { company_name, email, password, phone, address, role } = req.body;
 
+        const allowedRoles = ["business", "supplier"];
+
+        if (!allowedRoles.includes(role)) {
+            return res.status(400).json({
+                message: "Invalid role",
+            });
+        }
+
         const existingUser = await pool.query(
             "SELECT * FROM users WHERE email = $1",
             [email]
@@ -33,6 +41,7 @@ const register = async (req, res) => {
         });
     } catch (error) {
         console.error(error);
+
         res.status(500).json({
             message: "Server error",
         });
@@ -94,11 +103,13 @@ const login = async (req, res) => {
         });
     } catch (error) {
         console.error(error);
+
         res.status(500).json({
             message: "Server error",
         });
     }
 };
+
 const getMe = async (req, res) => {
     try {
         const user = await pool.query(
@@ -119,11 +130,13 @@ const getMe = async (req, res) => {
         });
     } catch (error) {
         console.error(error);
+
         res.status(500).json({
             message: "Server error",
         });
     }
 };
+
 module.exports = {
     register,
     login,

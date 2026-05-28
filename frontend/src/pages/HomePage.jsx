@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
 import Cart from "../components/Cart";
 
@@ -48,6 +49,10 @@ function HomePage({
         "all",
         ...new Set(products.map((product) => product.category_name).filter(Boolean)),
     ];
+
+    const myProductsCount = products.filter(
+        (product) => product.supplier_id === user?.id
+    ).length;
 
     if (!token) {
         return (
@@ -218,64 +223,42 @@ function HomePage({
                     </h1>
 
                     <p>
-                        Керуйте товарами, замовленнями та закупівлями в одному
-                        зручному просторі Br1tuyHub.
+                        {user?.role === "supplier"
+                            ? "Керуйте товарами, залишками та замовленнями у кабінеті постачальника."
+                            : "Переглядайте каталог, додавайте товари в кошик та оформлюйте замовлення."}
                     </p>
                 </div>
 
                 <div className="home-hero-cards">
-                    <div>
-                        <strong>{products.length}</strong>
-                        <span>Товарів у каталозі</span>
-                    </div>
+                    {user?.role === "supplier" ? (
+                        <>
+                            <div>
+                                <strong>{myProductsCount}</strong>
+                                <span>Мої товари</span>
+                            </div>
 
-                    <div>
-                        <strong>{cart.length}</strong>
-                        <span>Позицій у кошику</span>
-                    </div>
+                            <div>
+                                <Link to="/supplier" className="hero-card-link">
+                                    <strong>↗</strong>
+                                    <span>Кабінет постачальника</span>
+                                </Link>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <div>
+                                <strong>{products.length}</strong>
+                                <span>Товарів у каталозі</span>
+                            </div>
+
+                            <div>
+                                <strong>{cart.length}</strong>
+                                <span>Позицій у кошику</span>
+                            </div>
+                        </>
+                    )}
                 </div>
             </section>
-
-            {user?.role === "supplier" && (
-                <div className="form-card">
-                    <h1>Create Product</h1>
-
-                    <form onSubmit={handleCreateProduct}>
-                        <input
-                            type="text"
-                            placeholder="Назва товару"
-                            onChange={(e) => setName(e.target.value)}
-                        />
-
-                        <input
-                            type="number"
-                            placeholder="Ціна"
-                            onChange={(e) => setPrice(e.target.value)}
-                        />
-
-                        <select onChange={(e) => setUnit(e.target.value)}>
-                            <option value="кг">за кг</option>
-                            <option value="100 г">за 100 г</option>
-                            <option value="шт">за штуку</option>
-                            <option value="л">за літр</option>
-                            <option value="упаковка">за упаковку</option>
-                        </select>
-
-                        <input
-                            type="number"
-                            placeholder="Кількість в наявності"
-                            onChange={(e) => setQuantityAvailable(e.target.value)}
-                        />
-
-                        <input
-                            type="file"
-                            onChange={(e) => setImage(e.target.files[0])}
-                        />
-
-                        <button type="submit">Створити товар</button>
-                    </form>
-                </div>
-            )}
 
             <h2 className="section-title">Каталог товарів</h2>
 
