@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useFavorites } from "../contexts/FavoritesContext";
+import { getImageUrl } from "../api/client";
 
 function ProductCard({ product, user, addToCart }) {
     const { toggleFavorite, isFavorite } = useFavorites();
@@ -15,7 +16,7 @@ function ProductCard({ product, user, addToCart }) {
 
             {product.image_url && (
                 <img
-                    src={`http://localhost:5000${product.image_url}`}
+                    src={getImageUrl(product.image_url)}
                     alt={product.name}
                 />
             )}

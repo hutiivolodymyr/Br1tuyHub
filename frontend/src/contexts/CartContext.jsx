@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { toast } from "react-toastify";
 
 const CartContext = createContext(null);
 
@@ -14,8 +15,27 @@ export function CartProvider({ children }) {
 
     const addToCart = (product) => {
         const existingItem = cart.find((item) => item.id === product.id);
+        const availableQuantity = Number(product.quantity_available);
+
+        if (!Number.isFinite(availableQuantity) || availableQuantity <= 0) {
+            toast.error("Цього товару немає в наявності");
+            return;
+        }
+
+        if (
+            cart.length > 0 &&
+            cart[0].supplier_id !== product.supplier_id
+        ) {
+            toast.error("Можна оформити замовлення тільки в одного постачальника");
+            return;
+        }
 
         if (existingItem) {
+            if (existingItem.quantity >= availableQuantity) {
+                toast.error("Недостатньо товару на складі");
+                return;
+            }
+
             setCart(
                 cart.map((item) =>
                     item.id === product.id
@@ -35,7 +55,8 @@ export function CartProvider({ children }) {
     const increaseQuantity = (productId) => {
         setCart(
             cart.map((item) =>
-                item.id === productId
+                item.id === productId &&
+                item.quantity < Number(item.quantity_available)
                     ? { ...item, quantity: item.quantity + 1 }
                     : item
             )

@@ -1,37 +1,33 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
+import apiClient from "../api/client";
+import { getStatusLabel } from "../utils/orderStatus";
 
 function OrderDetailsPage() {
     const { id } = useParams();
-
     const { token } = useAuth();
-
     const [order, setOrder] = useState(null);
     const [items, setItems] = useState([]);
 
-    const fetchOrder = async () => {
+    const fetchOrder = useCallback(async () => {
         try {
-            const response = await axios.get(
-                `http://localhost:5000/api/orders/${id}`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
+            const response = await apiClient.get(`/api/orders/${id}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
 
             setOrder(response.data.order);
             setItems(response.data.items);
         } catch (error) {
             console.error(error);
         }
-    };
+    }, [id, token]);
 
     useEffect(() => {
         fetchOrder();
-    }, []);
+    }, [fetchOrder]);
 
     if (!order) {
         return <p>Loading...</p>;
@@ -40,20 +36,43 @@ function OrderDetailsPage() {
     return (
         <div>
             <div className="cart-card">
-                <h2>Замовлення #{order.id}</h2>
+                <div className="panel-heading">
+                    <span className={`status ${order.status}`}>
+                        {getStatusLabel(order.status)}
+                    </span>
+                    <h2>Замовлення #{order.id}</h2>
+                </div>
 
-                <p>
-                    <strong>Статус:</strong> {order.status}
-                </p>
-
-                <p>
-                    <strong>Сума:</strong> {order.total_price} грн
-                </p>
-
-                <p>
-                    <strong>Дата:</strong>{" "}
-                    {new Date(order.created_at).toLocaleDateString()}
-                </p>
+                <div className="details-grid">
+                    <div>
+                        <span>Бізнес</span>
+                        <strong>{order.business_name || "-"}</strong>
+                        <p>{order.business_email || ""}</p>
+                        <p>{order.business_phone || ""}</p>
+                    </div>
+                    <div>
+                        <span>Постачальник</span>
+                        <strong>{order.supplier_name || "-"}</strong>
+                        <p>{order.supplier_email || ""}</p>
+                        <p>{order.supplier_phone || ""}</p>
+                    </div>
+                    <div>
+                        <span>Доставка</span>
+                        <strong>{order.delivery_phone || "Телефон не вказано"}</strong>
+                        <p>{order.delivery_address || "Адресу не вказано"}</p>
+                        <p>{order.delivery_comment || ""}</p>
+                    </div>
+                    <div>
+                        <span>Сума</span>
+                        <strong>{order.total_price} грн</strong>
+                        <p>{new Date(order.created_at).toLocaleDateString()}</p>
+                        {order.pdf_url && (
+                            <a href={`http://localhost:5000${order.pdf_url}`} target="_blank" rel="noreferrer">
+                                Відкрити рахунок PDF
+                            </a>
+                        )}
+                    </div>
+                </div>
             </div>
 
             <div className="cart-card">
@@ -62,14 +81,8 @@ function OrderDetailsPage() {
                 {items.map((item) => (
                     <div className="cart-item" key={item.id}>
                         <span>{item.name}</span>
-
-                        <span>
-                            {item.quantity} × {item.price} грн
-                        </span>
-
-                        <span>
-                            {item.subtotal} грн
-                        </span>
+                        <span>{item.quantity} x {item.price} грн</span>
+                        <span>{item.subtotal} грн</span>
                     </div>
                 ))}
             </div>

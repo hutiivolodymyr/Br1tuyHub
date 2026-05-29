@@ -15,11 +15,9 @@ function HomePage({
     setCompanyName,
     setEmail,
     setPassword,
-    handleCreateProduct,
-    setName,
-    setPrice,
-    setImage,
     products,
+    productPagination,
+    fetchProducts,
     addToCart,
     cart,
     totalPrice,
@@ -27,8 +25,12 @@ function HomePage({
     increaseQuantity,
     decreaseQuantity,
     handleCheckout,
-    setUnit,
-    setQuantityAvailable,
+    deliveryPhone,
+    setDeliveryPhone,
+    deliveryAddress,
+    setDeliveryAddress,
+    deliveryComment,
+    setDeliveryComment,
 }) {
     const [search, setSearch] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("all");
@@ -293,6 +295,26 @@ function HomePage({
                 ))}
             </div>
 
+            <div className="pagination-bar">
+                <button
+                    disabled={productPagination.page <= 1}
+                    onClick={() => fetchProducts(productPagination.page - 1)}
+                >
+                    Назад
+                </button>
+
+                <span>
+                    Сторінка {productPagination.page} з {productPagination.totalPages || 1}
+                </span>
+
+                <button
+                    disabled={productPagination.page >= (productPagination.totalPages || 1)}
+                    onClick={() => fetchProducts(productPagination.page + 1)}
+                >
+                    Далі
+                </button>
+            </div>
+
             {user?.role === "business" && (
                 <Cart
                     cart={cart}
@@ -301,6 +323,12 @@ function HomePage({
                     handleCheckout={handleCheckout}
                     increaseQuantity={increaseQuantity}
                     decreaseQuantity={decreaseQuantity}
+                    deliveryPhone={deliveryPhone}
+                    setDeliveryPhone={setDeliveryPhone}
+                    deliveryAddress={deliveryAddress}
+                    setDeliveryAddress={setDeliveryAddress}
+                    deliveryComment={deliveryComment}
+                    setDeliveryComment={setDeliveryComment}
                 />
             )}
         </>

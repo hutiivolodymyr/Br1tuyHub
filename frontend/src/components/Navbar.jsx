@@ -1,5 +1,8 @@
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
+
+const navClassName = ({ isActive }) =>
+    isActive ? "nav-link active" : "nav-link";
 
 function Navbar({ token, user, handleLogout }) {
     const { cart } = useCart();
@@ -10,51 +13,75 @@ function Navbar({ token, user, handleLogout }) {
     );
 
     return (
-        <div className="navbar">
+        <header className="navbar">
             <Link to="/" className="logo">
                 Br1tuyHub
             </Link>
 
-            <div className="nav-info">
+            <nav className="nav-info" aria-label="Основна навігація">
+                <NavLink to="/" className={navClassName} end>
+                    Товари
+                </NavLink>
+
                 {user?.role === "business" && (
                     <>
-                        <Link to="/business">Кабінет бізнесу</Link>
-                        <Link to="/favorites">Обране</Link>
+                        <NavLink to="/business" className={navClassName}>
+                            Кабінет бізнесу
+                        </NavLink>
 
-                        <Link to="/cart" className="cart-link">
-                            🛒
+                        <NavLink to="/favorites" className={navClassName}>
+                            Обране
+                        </NavLink>
+
+                        <NavLink to="/cart" className="cart-link" aria-label="Кошик">
+                            <span>Кошик</span>
                             {cartCount > 0 && (
-                                <span className="cart-badge">
+                                <strong className="cart-badge">
                                     {cartCount}
-                                </span>
+                                </strong>
                             )}
-                        </Link>
+                        </NavLink>
                     </>
                 )}
 
-                <Link to="/">Товари</Link>
+                {user?.role === "supplier" && (
+                    <NavLink to="/supplier" className={navClassName}>
+                        Кабінет постачальника
+                    </NavLink>
+                )}
 
-                {token && <Link to="/orders">Замовлення</Link>}
-
-                {user && (
-                    <span>
-                        {user.company_name} · {user.role}
-                    </span>
+                {user?.role === "admin" && (
+                    <NavLink to="/admin" className={navClassName}>
+                        Адмін
+                    </NavLink>
                 )}
 
                 {token && (
-                    <button onClick={handleLogout}>
-                        Вийти
-                    </button>
-                )}
-            </div>
+                    <>
+                        <NavLink to="/orders" className={navClassName}>
+                            Замовлення
+                        </NavLink>
 
-            {user?.role === "supplier" && (
-                <Link to="/supplier">
-                    Кабінет постачальника
-                </Link>
+                        <NavLink to="/profile" className={navClassName}>
+                            Профіль
+                        </NavLink>
+                    </>
+                )}
+            </nav>
+
+            {user && (
+                <div className="nav-account">
+                    <span>{user.company_name}</span>
+                    <strong>{user.role}</strong>
+                </div>
             )}
-        </div>
+
+            {token && (
+                <button className="logout-button" onClick={handleLogout}>
+                    Вийти
+                </button>
+            )}
+        </header>
     );
 }
 

@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../contexts/CartContext";
 import { Link } from "react-router-dom";
 import Loader from "../components/Loader";
+import apiClient, { getImageUrl } from "../api/client";
 
 function ProductDetailsPage() {
     const { id } = useParams();
@@ -15,17 +15,13 @@ function ProductDetailsPage() {
     const [product, setProduct] = useState(null);
     const [relatedProducts, setRelatedProducts] = useState([]);
 
-    const fetchProduct = async () => {
+    const fetchProduct = useCallback(async () => {
         try {
-            const response = await axios.get(
-                `http://localhost:5000/api/products/${id}`
-            );
+            const response = await apiClient.get(`/api/products/${id}`);
 
             setProduct(response.data.product);
 
-            const relatedResponse = await axios.get(
-                "http://localhost:5000/api/products"
-            );
+            const relatedResponse = await apiClient.get("/api/products");
 
             const filtered = relatedResponse.data.products
                 .filter((p) => p.id !== response.data.product.id)
@@ -35,11 +31,11 @@ function ProductDetailsPage() {
         } catch (error) {
             console.error(error);
         }
-    };
+    }, [id]);
 
     useEffect(() => {
         fetchProduct();
-    }, [id]);
+    }, [fetchProduct]);
 
 if (!product) {
     return <Loader />;
@@ -50,7 +46,7 @@ if (!product) {
             <div className="product-details">
                 {product.image_url && (
                     <img
-                        src={`http://localhost:5000${product.image_url}`}
+                        src={getImageUrl(product.image_url)}
                         alt={product.name}
                     />
                 )}
@@ -90,7 +86,7 @@ if (!product) {
                         <div className="product-card" key={item.id}>
                             {item.image_url && (
                                 <img
-                                    src={`http://localhost:5000${item.image_url}`}
+                                    src={getImageUrl(item.image_url)}
                                     alt={item.name}
                                 />
                             )}

@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { useCallback, useEffect, useState } from "react";
 import { Routes, Route } from "react-router-dom";
 import { toast } from "react-toastify";
 import "./App.css";
+import apiClient from "./api/client";
 
 import Navbar from "./components/Navbar";
 import Cart from "./components/Cart";
@@ -16,6 +16,8 @@ import OrderDetailsPage from "./pages/OrderDetailsPage";
 import SupplierDashboard from "./pages/SupplierDashboard";
 import BusinessDashboard from "./pages/BusinessDashboard";
 import FavoritesPage from "./pages/FavoritesPage";
+import ProfilePage from "./pages/ProfilePage";
+import AdminDashboard from "./pages/AdminDashboard";
 
 import { useAuth } from "./contexts/AuthContext";
 import { useCart } from "./contexts/CartContext";
@@ -42,20 +44,52 @@ function App() {
     const [role, setRole] = useState("business");
 
     const [name, setName] = useState("");
+    const [description, setDescription] = useState("");
     const [price, setPrice] = useState("");
     const [image, setImage] = useState(null);
     const [unit, setUnit] = useState("кг");
     const [quantityAvailable, setQuantityAvailable] = useState("");
+    const [categoryId, setCategoryId] = useState("");
     const [products, setProducts] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [productPagination, setProductPagination] = useState({
+        page: 1,
+        totalPages: 1,
+    });
+    const [orderStatusFilter, setOrderStatusFilter] = useState("");
+    const [orderPage, setOrderPage] = useState(1);
+    const [deliveryPhone, setDeliveryPhone] = useState("");
+    const [deliveryAddress, setDeliveryAddress] = useState("");
+    const [deliveryComment, setDeliveryComment] = useState("");
 
-    const fetchProducts = async () => {
-        const response = await axios.get("http://localhost:5000/api/products");
+    useEffect(() => {
+        setDeliveryPhone(user?.phone || "");
+        setDeliveryAddress(user?.address || "");
+    }, [user]);
+
+    const fetchProducts = useCallback(async (page = productPagination.page) => {
+        const response = await apiClient.get("/api/products", {
+            params: {
+                page,
+                limit: 12,
+            },
+        });
         setProducts(response.data.products);
-    };
+        setProductPagination(response.data.pagination || { page, totalPages: 1 });
+    }, [productPagination.page]);
 
-    const fetchMe = async () => {
+    const fetchCategories = useCallback(async () => {
+        const response = await apiClient.get("/api/categories");
+        setCategories(response.data.categories);
+
+        if (!categoryId && response.data.categories.length > 0) {
+            setCategoryId(String(response.data.categories[0].id));
+        }
+    }, [categoryId]);
+
+    const fetchMe = useCallback(async () => {
         try {
-            const response = await axios.get("http://localhost:5000/api/auth/me", {
+            const response = await apiClient.get("/api/auth/me", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -66,13 +100,18 @@ function App() {
             console.error(error);
             logout();
         }
-    };
+    }, [logout, setUser, token]);
 
-    const fetchMyOrders = async () => {
+    const fetchMyOrders = useCallback(async () => {
         try {
             if (!token) return;
 
-            const response = await axios.get("http://localhost:5000/api/orders/my", {
+            const response = await apiClient.get("/api/orders/my", {
+                params: {
+                    page: orderPage,
+                    limit: 10,
+                    status: orderStatusFilter || undefined,
+                },
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -82,21 +121,22 @@ function App() {
         } catch (error) {
             console.error(error);
         }
-    };
+    }, [orderPage, orderStatusFilter, token]);
 
     useEffect(() => {
         fetchProducts();
+        fetchCategories();
 
         if (token) {
             fetchMe();
             fetchMyOrders();
         }
-    }, [token]);
+    }, [fetchCategories, fetchMe, fetchMyOrders, fetchProducts, token]);
 
     const handleRegister = async (e) => {
         e.preventDefault();
 
-        await axios.post("http://localhost:5000/api/auth/register", {
+        await apiClient.post("/api/auth/register", {
             company_name: companyName,
             email,
             password,
@@ -123,10 +163,15 @@ function App() {
     const handleCreateProduct = async (e) => {
         e.preventDefault();
 
+        if (!name.trim() || !description.trim() || !price || !quantityAvailable || !categoryId) {
+            toast.error("Заповніть назву, опис, категорію, ціну і кількість");
+            return;
+        }
+
         const formData = new FormData();
-        formData.append("category_id", 1);
+        formData.append("category_id", categoryId);
         formData.append("name", name);
-        formData.append("description", "Тест");
+        formData.append("description", description);
         formData.append("price", price);
         formData.append("unit", unit);
         formData.append("quantity_available", quantityAvailable);
@@ -135,13 +180,18 @@ function App() {
             formData.append("image", image);
         }
 
-        await axios.post("http://localhost:5000/api/products", formData, {
+        await apiClient.post("/api/products", formData, {
             headers: {
                 Authorization: `Bearer ${token}`,
             },
         });
 
         fetchProducts();
+        setName("");
+        setDescription("");
+        setPrice("");
+        setQuantityAvailable("");
+        setImage(null);
     };
 
     const handleCheckout = async () => {
@@ -161,18 +211,34 @@ function App() {
                 return;
             }
 
+            if (!deliveryPhone.trim() || !deliveryAddress.trim()) {
+                toast.error("Вкажіть телефон і адресу доставки");
+                return;
+            }
+
             const supplier_id = cart[0].supplier_id;
+            const hasMixedSuppliers = cart.some(
+                (item) => item.supplier_id !== supplier_id
+            );
+
+            if (hasMixedSuppliers) {
+                toast.error("У кошику можуть бути товари тільки одного постачальника");
+                return;
+            }
 
             const items = cart.map((item) => ({
                 product_id: item.id,
                 quantity: item.quantity,
             }));
 
-            await axios.post(
-                "http://localhost:5000/api/orders",
+            await apiClient.post(
+                "/api/orders",
                 {
                     supplier_id,
                     items,
+                    delivery_phone: deliveryPhone,
+                    delivery_address: deliveryAddress,
+                    delivery_comment: deliveryComment,
                 },
                 {
                     headers: {
@@ -184,6 +250,7 @@ function App() {
             toast.success("Замовлення успішно створено");
 
             clearCart();
+            setDeliveryComment("");
             fetchMyOrders();
             fetchProducts();
         } catch (error) {
@@ -194,7 +261,7 @@ function App() {
 
     const deleteProduct = async (productId) => {
         try {
-            await axios.delete(`http://localhost:5000/api/products/${productId}`, {
+            await apiClient.delete(`/api/products/${productId}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -209,8 +276,8 @@ function App() {
 
     const updateProduct = async (productId, updatedData) => {
         try {
-            await axios.put(
-                `http://localhost:5000/api/products/${productId}`,
+            await apiClient.put(
+                `/api/products/${productId}`,
                 updatedData,
                 {
                     headers: {
@@ -228,8 +295,8 @@ function App() {
 
     const updateOrderStatus = async (orderId, status) => {
         try {
-            await axios.put(
-                `http://localhost:5000/api/orders/${orderId}/status`,
+            await apiClient.put(
+                `/api/orders/${orderId}/status`,
                 { status },
                 {
                     headers: {
@@ -272,13 +339,9 @@ function App() {
                                 setEmail={setEmail}
                                 setPassword={setPassword}
                                 setRole={setRole}
-                                handleCreateProduct={handleCreateProduct}
-                                setName={setName}
-                                setPrice={setPrice}
-                                setImage={setImage}
-                                setUnit={setUnit}
-                                setQuantityAvailable={setQuantityAvailable}
                                 products={products}
+                                productPagination={productPagination}
+                                fetchProducts={fetchProducts}
                                 addToCart={addToCart}
                                 cart={cart}
                                 totalPrice={totalPrice}
@@ -286,6 +349,12 @@ function App() {
                                 increaseQuantity={increaseQuantity}
                                 decreaseQuantity={decreaseQuantity}
                                 handleCheckout={handleCheckout}
+                                deliveryPhone={deliveryPhone}
+                                setDeliveryPhone={setDeliveryPhone}
+                                deliveryAddress={deliveryAddress}
+                                setDeliveryAddress={setDeliveryAddress}
+                                deliveryComment={deliveryComment}
+                                setDeliveryComment={setDeliveryComment}
                             />
                         }
                     />
@@ -308,6 +377,12 @@ function App() {
                                             increaseQuantity={increaseQuantity}
                                             decreaseQuantity={decreaseQuantity}
                                             handleCheckout={handleCheckout}
+                                            deliveryPhone={deliveryPhone}
+                                            setDeliveryPhone={setDeliveryPhone}
+                                            deliveryAddress={deliveryAddress}
+                                            setDeliveryAddress={setDeliveryAddress}
+                                            deliveryComment={deliveryComment}
+                                            setDeliveryComment={setDeliveryComment}
                                         />
                                     </div>
                                 </RoleProtectedRoute>
@@ -343,9 +418,15 @@ function App() {
                             <ProtectedRoute token={token}>
                                 <RoleProtectedRoute
                                     user={user}
-                                    allowedRoles={["business", "supplier"]}
+                                    allowedRoles={["business", "supplier", "admin"]}
                                 >
-                                    <OrdersPage orders={orders} />
+                                    <OrdersPage
+                                        orders={orders}
+                                        statusFilter={orderStatusFilter}
+                                        setStatusFilter={setOrderStatusFilter}
+                                        orderPage={orderPage}
+                                        setOrderPage={setOrderPage}
+                                    />
                                 </RoleProtectedRoute>
                             </ProtectedRoute>
                         }
@@ -356,6 +437,26 @@ function App() {
                         element={
                             <ProtectedRoute token={token}>
                                 <OrderDetailsPage />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/profile"
+                        element={
+                            <ProtectedRoute token={token}>
+                                <ProfilePage />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/admin"
+                        element={
+                            <ProtectedRoute token={token}>
+                                <RoleProtectedRoute user={user} allowedRoles={["admin"]}>
+                                    <AdminDashboard />
+                                </RoleProtectedRoute>
                             </ProtectedRoute>
                         }
                     />
@@ -373,11 +474,14 @@ function App() {
                                         updateProduct={updateProduct}
                                         updateOrderStatus={updateOrderStatus}
                                         handleCreateProduct={handleCreateProduct}
+                                        categories={categories}
                                         setName={setName}
+                                        setDescription={setDescription}
                                         setPrice={setPrice}
                                         setImage={setImage}
                                         setUnit={setUnit}
                                         setQuantityAvailable={setQuantityAvailable}
+                                        setCategoryId={setCategoryId}
                                     />
                                 </RoleProtectedRoute>
                             </ProtectedRoute>

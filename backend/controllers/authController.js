@@ -8,6 +8,24 @@ const register = async (req, res) => {
 
         const allowedRoles = ["business", "supplier"];
 
+        if (!company_name || company_name.trim().length < 2) {
+            return res.status(400).json({
+                message: "Company name is required",
+            });
+        }
+
+        if (!email || !email.includes("@")) {
+            return res.status(400).json({
+                message: "Valid email is required",
+            });
+        }
+
+        if (!password || password.length < 8) {
+            return res.status(400).json({
+                message: "Password must be at least 8 characters",
+            });
+        }
+
         if (!allowedRoles.includes(role)) {
             return res.status(400).json({
                 message: "Invalid role",
@@ -51,6 +69,12 @@ const register = async (req, res) => {
 const login = async (req, res) => {
     try {
         const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({
+                message: "Email and password are required",
+            });
+        }
 
         const user = await pool.query(
             "SELECT * FROM users WHERE email = $1",

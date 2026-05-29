@@ -7,7 +7,11 @@ const roleMiddleware = require("../middleware/roleMiddleware");
 const {
     getAdminPanel,
     getAllUsers,
+    getAllOrders,
+    getAllProducts,
+    getAuditLogs,
     deleteUser,
+    deleteOrder,
     blockUser,
     unblockUser,
 } = require("../controllers/adminController");
@@ -26,11 +30,39 @@ router.get(
     getAllUsers
 );
 
+router.get(
+    "/orders",
+    authMiddleware,
+    roleMiddleware("admin"),
+    getAllOrders
+);
+
+router.get(
+    "/products",
+    authMiddleware,
+    roleMiddleware("admin"),
+    getAllProducts
+);
+
+router.get(
+    "/audit-logs",
+    authMiddleware,
+    roleMiddleware("admin"),
+    getAuditLogs
+);
+
 router.delete(
     "/users/:id",
     authMiddleware,
     roleMiddleware("admin"),
     deleteUser
+);
+
+router.delete(
+    "/orders/:id",
+    authMiddleware,
+    roleMiddleware("admin"),
+    deleteOrder
 );
 
 router.put(

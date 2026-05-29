@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import ConfirmModal from "../components/ConfirmModal";
+import { NEXT_STATUSES, getStatusLabel } from "../utils/orderStatus";
 
 function SupplierDashboard({
     products,
@@ -8,17 +10,25 @@ function SupplierDashboard({
     updateProduct,
     updateOrderStatus,
     handleCreateProduct,
+    categories,
     setName,
+    setDescription,
     setPrice,
     setImage,
     setUnit,
     setQuantityAvailable,
+    setCategoryId,
 }) {
     const [editingId, setEditingId] = useState(null);
     const [editName, setEditName] = useState("");
+    const [editDescription, setEditDescription] = useState("");
+    const [editCategoryId, setEditCategoryId] = useState("");
     const [editPrice, setEditPrice] = useState("");
     const [editQuantity, setEditQuantity] = useState("");
     const [editUnit, setEditUnit] = useState("кг");
+    const [editImage, setEditImage] = useState(null);
+    const [orderFilter, setOrderFilter] = useState("");
+    const [confirmProductId, setConfirmProductId] = useState(null);
 
     const myProducts = products.filter(
         (product) => product.supplier_id === user?.id
@@ -28,65 +38,86 @@ function SupplierDashboard({
         (order) => order.supplier_id === user?.id
     );
 
-    const totalProducts = myProducts.length;
-    const totalOrders = supplierOrders.length;
+    const filteredOrders = orderFilter
+        ? supplierOrders.filter((order) => order.status === orderFilter)
+        : supplierOrders;
 
-    const totalRevenue = supplierOrders.reduce(
-        (sum, order) => sum + Number(order.total_price),
-        0
-    );
+    const stats = useMemo(() => {
+        const confirmedOrders = supplierOrders.filter(
+            (order) => order.status !== "cancelled"
+        );
+
+        return {
+            totalProducts: myProducts.length,
+            totalOrders: supplierOrders.length,
+            totalRevenue: confirmedOrders.reduce(
+                (sum, order) => sum + Number(order.total_price),
+                0
+            ),
+            lowStock: myProducts.filter(
+                (product) => Number(product.quantity_available) <= 5
+            ).length,
+        };
+    }, [myProducts, supplierOrders]);
 
     const startEdit = (product) => {
         setEditingId(product.id);
         setEditName(product.name);
+        setEditDescription(product.description || "");
+        setEditCategoryId(String(product.category_id || ""));
         setEditPrice(product.price);
         setEditQuantity(product.quantity_available);
         setEditUnit(product.unit);
+        setEditImage(null);
     };
 
     const saveEdit = (product) => {
-        updateProduct(product.id, {
-            category_id: product.category_id,
-            name: editName,
-            description: product.description,
-            price: editPrice,
-            unit: editUnit,
-            quantity_available: editQuantity,
-            image_url: product.image_url,
-        });
+        const formData = new FormData();
+        formData.append("category_id", editCategoryId);
+        formData.append("name", editName);
+        formData.append("description", editDescription);
+        formData.append("price", editPrice);
+        formData.append("unit", editUnit);
+        formData.append("quantity_available", editQuantity);
+        formData.append("image_url", product.image_url || "");
 
+        if (editImage) {
+            formData.append("image", editImage);
+        }
+
+        updateProduct(product.id, formData);
         setEditingId(null);
     };
 
     return (
         <div className="supplier-page">
-            <section className="dashboard-hero">
+            <section className="home-hero">
                 <div>
                     <span className="home-badge">Кабінет постачальника</span>
-
-                    <h1>Керуйте товарами та замовленнями</h1>
-
+                    <h1>Товари, залишки й замовлення</h1>
                     <p>
-                        Додавайте нові товари, оновлюйте залишки,
-                        редагуйте ціни та обробляйте замовлення бізнес-клієнтів.
+                        Керуйте каталогом, оновлюйте опис і категорії товарів, стежте за
+                        залишками та обробляйте замовлення бізнес-клієнтів.
                     </p>
                 </div>
             </section>
 
             <div className="stats-grid">
                 <div className="stat-card">
-                    <h3>{totalProducts}</h3>
+                    <h3>{stats.totalProducts}</h3>
                     <p>Мої товари</p>
                 </div>
-
                 <div className="stat-card">
-                    <h3>{totalOrders}</h3>
+                    <h3>{stats.totalOrders}</h3>
                     <p>Замовлення</p>
                 </div>
-
                 <div className="stat-card">
-                    <h3>{totalRevenue} грн</h3>
-                    <p>Загальна сума</p>
+                    <h3>{stats.totalRevenue} грн</h3>
+                    <p>Сума продажів</p>
+                </div>
+                <div className="stat-card">
+                    <h3>{stats.lowStock}</h3>
+                    <p>Малий залишок</p>
                 </div>
             </div>
 
@@ -97,16 +128,30 @@ function SupplierDashboard({
                     <input
                         type="text"
                         placeholder="Назва товару"
-                        onChange={(e) => setName(e.target.value)}
+                        onChange={(event) => setName(event.target.value)}
                     />
+
+                    <textarea
+                        placeholder="Опис товару"
+                        onChange={(event) => setDescription(event.target.value)}
+                    />
+
+                    <select onChange={(event) => setCategoryId(event.target.value)}>
+                        <option value="">Оберіть категорію</option>
+                        {categories.map((category) => (
+                            <option key={category.id} value={category.id}>
+                                {category.name}
+                            </option>
+                        ))}
+                    </select>
 
                     <input
                         type="number"
                         placeholder="Ціна"
-                        onChange={(e) => setPrice(e.target.value)}
+                        onChange={(event) => setPrice(event.target.value)}
                     />
 
-                    <select onChange={(e) => setUnit(e.target.value)}>
+                    <select onChange={(event) => setUnit(event.target.value)}>
                         <option value="кг">за кг</option>
                         <option value="100 г">за 100 г</option>
                         <option value="шт">за штуку</option>
@@ -117,12 +162,12 @@ function SupplierDashboard({
                     <input
                         type="number"
                         placeholder="Кількість в наявності"
-                        onChange={(e) => setQuantityAvailable(e.target.value)}
+                        onChange={(event) => setQuantityAvailable(event.target.value)}
                     />
 
                     <input
                         type="file"
-                        onChange={(e) => setImage(e.target.files[0])}
+                        onChange={(event) => setImage(event.target.files[0])}
                     />
 
                     <button type="submit">Створити товар</button>
@@ -141,24 +186,35 @@ function SupplierDashboard({
                                 <div className="supplier-edit-grid">
                                     <input
                                         value={editName}
-                                        onChange={(e) => setEditName(e.target.value)}
+                                        onChange={(event) => setEditName(event.target.value)}
                                     />
-
+                                    <textarea
+                                        value={editDescription}
+                                        onChange={(event) => setEditDescription(event.target.value)}
+                                    />
+                                    <select
+                                        value={editCategoryId}
+                                        onChange={(event) => setEditCategoryId(event.target.value)}
+                                    >
+                                        {categories.map((category) => (
+                                            <option key={category.id} value={category.id}>
+                                                {category.name}
+                                            </option>
+                                        ))}
+                                    </select>
                                     <input
                                         type="number"
                                         value={editPrice}
-                                        onChange={(e) => setEditPrice(e.target.value)}
+                                        onChange={(event) => setEditPrice(event.target.value)}
                                     />
-
                                     <input
                                         type="number"
                                         value={editQuantity}
-                                        onChange={(e) => setEditQuantity(e.target.value)}
+                                        onChange={(event) => setEditQuantity(event.target.value)}
                                     />
-
                                     <select
                                         value={editUnit}
-                                        onChange={(e) => setEditUnit(e.target.value)}
+                                        onChange={(event) => setEditUnit(event.target.value)}
                                     >
                                         <option value="кг">кг</option>
                                         <option value="100 г">100 г</option>
@@ -166,34 +222,32 @@ function SupplierDashboard({
                                         <option value="л">л</option>
                                         <option value="упаковка">упаковка</option>
                                     </select>
+                                    <input
+                                        type="file"
+                                        onChange={(event) => setEditImage(event.target.files[0])}
+                                    />
 
-                                    <button onClick={() => saveEdit(product)}>
-                                        Зберегти
-                                    </button>
-
-                                    <button onClick={() => setEditingId(null)}>
-                                        Скасувати
-                                    </button>
+                                    <button onClick={() => saveEdit(product)}>Зберегти</button>
+                                    <button onClick={() => setEditingId(null)}>Скасувати</button>
                                 </div>
                             ) : (
                                 <>
                                     <div>
                                         <strong>{product.name}</strong>
                                         <span>
+                                            {product.category_name || "Без категорії"} ·{" "}
                                             {product.quantity_available} {product.unit}
                                         </span>
                                     </div>
-
-                                    <p>
-                                        {product.price} грн / {product.unit}
-                                    </p>
-
+                                    <p>{product.price} грн / {product.unit}</p>
                                     <div className="cart-item-actions">
                                         <button onClick={() => startEdit(product)}>
                                             Редагувати
                                         </button>
-
-                                        <button onClick={() => deleteProduct(product.id)}>
+                                        <button
+                                            className="danger-button"
+                                            onClick={() => setConfirmProductId(product.id)}
+                                        >
                                             Видалити
                                         </button>
                                     </div>
@@ -205,59 +259,66 @@ function SupplierDashboard({
             </div>
 
             <div className="cart-card supplier-section">
-                <h3>Замовлення на мої товари</h3>
+                <div className="panel-heading">
+                    <span>Фільтр за статусом</span>
+                    <h2>Замовлення</h2>
+                </div>
 
-                {supplierOrders.length === 0 ? (
+                <div className="filters">
+                    <select
+                        value={orderFilter}
+                        onChange={(event) => setOrderFilter(event.target.value)}
+                    >
+                        <option value="">Усі статуси</option>
+                        <option value="new">Нові</option>
+                        <option value="confirmed">Підтверджені</option>
+                        <option value="delivered">Доставлені</option>
+                        <option value="cancelled">Скасовані</option>
+                    </select>
+                </div>
+
+                {filteredOrders.length === 0 ? (
                     <p className="empty-state">Замовлень поки немає</p>
                 ) : (
-                    supplierOrders.map((order) => (
+                    filteredOrders.map((order) => (
                         <div className="order-card" key={order.id}>
                             <div className="order-header">
                                 <h4>Замовлення #{order.id}</h4>
-
                                 <span className={`status ${order.status}`}>
-                                    {order.status}
+                                    {getStatusLabel(order.status)}
                                 </span>
                             </div>
-
-                            <p>
-                                <strong>Сума:</strong> {order.total_price} грн
-                            </p>
-
-                            <p>
-                                <strong>Дата:</strong>{" "}
-                                {new Date(order.created_at).toLocaleDateString()}
-                            </p>
+                            <p><strong>Сума:</strong> {order.total_price} грн</p>
+                            <p><strong>Дата:</strong> {new Date(order.created_at).toLocaleDateString()}</p>
+                            <p><strong>Доставка:</strong> {order.delivery_address || "Не вказано"}</p>
 
                             <div className="cart-item-actions">
-                                <button
-                                    onClick={() =>
-                                        updateOrderStatus(order.id, "confirmed")
-                                    }
-                                >
-                                    Підтвердити
-                                </button>
-
-                                <button
-                                    onClick={() =>
-                                        updateOrderStatus(order.id, "delivered")
-                                    }
-                                >
-                                    Виконано
-                                </button>
-
-                                <button
-                                    onClick={() =>
-                                        updateOrderStatus(order.id, "cancelled")
-                                    }
-                                >
-                                    Скасувати
-                                </button>
+                                {(NEXT_STATUSES[order.status] || []).map((status) => (
+                                    <button
+                                        key={status}
+                                        onClick={() => updateOrderStatus(order.id, status)}
+                                    >
+                                        {getStatusLabel(status)}
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     ))
                 )}
             </div>
+
+            {confirmProductId && (
+                <ConfirmModal
+                    title="Видалити товар?"
+                    text="Товар зникне з каталогу, але історія замовлень залишиться."
+                    confirmText="Видалити"
+                    onConfirm={() => {
+                        deleteProduct(confirmProductId);
+                        setConfirmProductId(null);
+                    }}
+                    onCancel={() => setConfirmProductId(null)}
+                />
+            )}
         </div>
     );
 }

@@ -1,5 +1,5 @@
-import { createContext, useContext, useState } from "react";
-import axios from "axios";
+import { createContext, useCallback, useContext, useState } from "react";
+import apiClient from "../api/client";
 
 const AuthContext = createContext();
 
@@ -7,8 +7,8 @@ export const AuthProvider = ({ children }) => {
     const [token, setToken] = useState(localStorage.getItem("token") || "");
     const [user, setUser] = useState(null);
 
-    const login = async (email, password) => {
-        const response = await axios.post("http://localhost:5000/api/auth/login", {
+    const login = useCallback(async (email, password) => {
+        const response = await apiClient.post("/api/auth/login", {
             email,
             password,
         });
@@ -16,14 +16,14 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem("token", response.data.token);
         setToken(response.data.token);
         setUser(response.data.user);
-    };
+    }, []);
 
-    const logout = () => {
+    const logout = useCallback(() => {
         localStorage.removeItem("token");
         localStorage.removeItem("cart");
         setToken("");
         setUser(null);
-    };
+    }, []);
 
     return (
         <AuthContext.Provider
