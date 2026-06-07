@@ -4,6 +4,7 @@ import apiClient from "../api/client";
 import { useAuth } from "../contexts/AuthContext";
 import ConfirmModal from "../components/ConfirmModal";
 import { NEXT_STATUSES, getStatusLabel } from "../utils/orderStatus";
+import { formatOrderNumber } from "../utils/orderNumber";
 
 function AdminDashboard() {
     const { token, user } = useAuth();
@@ -134,6 +135,7 @@ function AdminDashboard() {
                                 <div className="admin-row-meta">
                                     <span>{item.phone || "Без телефону"}</span>
                                     <span>{item.address || "Без адреси"}</span>
+                                    <span>{item.region || "Регіон не вказано"}</span>
                                 </div>
                                 <div className="cart-item-actions">
                                     {item.id !== user?.id && (
@@ -175,7 +177,7 @@ function AdminDashboard() {
                     <div className="admin-list">
                         {orders.map((order) => (
                             <div className="admin-row admin-order-row" key={order.id}>
-                                <div><strong>Замовлення #{order.id}</strong><span>{order.business_name || "Бізнес"} {"->"} {order.supplier_name || "Постачальник"}</span></div>
+                                <div><strong>Замовлення {formatOrderNumber(order.id)}</strong><span>{order.business_name || "Бізнес"} - {order.supplier_name || "Постачальник"}</span></div>
                                 <div><span className={`status ${order.status}`}>{getStatusLabel(order.status)}</span></div>
                                 <div className="admin-row-meta">
                                     <span>{order.total_price} грн</span>
@@ -222,6 +224,7 @@ function AdminDashboard() {
                                 <div><span className={`status ${product.is_active ? "confirmed" : "cancelled"}`}>{product.is_active ? "active" : "hidden"}</span></div>
                                 <div className="admin-row-meta">
                                     <span>{product.category_name || "Без категорії"}</span>
+                                    <span>{product.supplier_region || "Регіон не вказано"}</span>
                                     <span>{product.price} грн / {product.unit}</span>
                                     <span>Залишок: {product.quantity_available}</span>
                                 </div>

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import ConfirmModal from "../components/ConfirmModal";
 import { NEXT_STATUSES, getStatusLabel } from "../utils/orderStatus";
+import { formatOrderNumber } from "../utils/orderNumber";
 
 function SupplierDashboard({
     products,
@@ -283,7 +284,7 @@ function SupplierDashboard({
                     filteredOrders.map((order) => (
                         <div className="order-card" key={order.id}>
                             <div className="order-header">
-                                <h4>Замовлення #{order.id}</h4>
+                                <h4>Замовлення {formatOrderNumber(order.id)}</h4>
                                 <span className={`status ${order.status}`}>
                                     {getStatusLabel(order.status)}
                                 </span>

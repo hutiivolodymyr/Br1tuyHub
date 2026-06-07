@@ -45,6 +45,11 @@ const PORT = process.env.PORT || 5000;
 
 const ensureSchema = async () => {
     await pool.query(`
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS region VARCHAR(120)
+    `);
+
+    await pool.query(`
         ALTER TABLE orders
         ADD COLUMN IF NOT EXISTS delivery_phone VARCHAR(50),
         ADD COLUMN IF NOT EXISTS delivery_address TEXT,

@@ -3,7 +3,7 @@ const pool = require("../db");
 const getProfile = async (req, res) => {
     try {
         const user = await pool.query(
-            `SELECT id, company_name, email, phone, address, role, is_blocked, created_at
+            `SELECT id, company_name, email, phone, address, region, role, is_blocked, created_at
              FROM users
              WHERE id = $1`,
             [req.user.id]
@@ -29,16 +29,17 @@ const getProfile = async (req, res) => {
 
 const updateProfile = async (req, res) => {
     try {
-        const { company_name, phone, address } = req.body;
+        const { company_name, phone, address, region } = req.body;
 
         const updatedUser = await pool.query(
             `UPDATE users
              SET company_name = COALESCE($1, company_name),
                  phone = COALESCE($2, phone),
-                 address = COALESCE($3, address)
-             WHERE id = $4
-             RETURNING id, company_name, email, phone, address, role, is_blocked, created_at`,
-            [company_name, phone, address, req.user.id]
+                 address = COALESCE($3, address),
+                 region = COALESCE($4, region)
+             WHERE id = $5
+             RETURNING id, company_name, email, phone, address, region, role, is_blocked, created_at`,
+            [company_name, phone, address, region, req.user.id]
         );
 
         if (updatedUser.rows.length === 0) {

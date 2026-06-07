@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import apiClient from "../api/client";
 import { getStatusLabel } from "../utils/orderStatus";
+import { formatOrderNumber } from "../utils/orderNumber";
 
 function OrderDetailsPage() {
     const { id } = useParams();
@@ -40,7 +41,7 @@ function OrderDetailsPage() {
                     <span className={`status ${order.status}`}>
                         {getStatusLabel(order.status)}
                     </span>
-                    <h2>Замовлення #{order.id}</h2>
+                    <h2>Замовлення {formatOrderNumber(order.id)}</h2>
                 </div>
 
                 <div className="details-grid">

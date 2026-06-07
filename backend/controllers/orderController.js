@@ -19,6 +19,33 @@ const statusTransitions = {
     cancelled: [],
 };
 
+const statusLabels = {
+    new: "Нове",
+    confirmed: "Підтверджене",
+    delivered: "Доставлене",
+    cancelled: "Скасоване",
+};
+
+const formatOrderNumber = (orderId) => `BH-${String(orderId).padStart(6, "0")}`;
+
+const formatMoney = (value) => Number(value || 0).toFixed(2);
+
+const calculateOrderTotal = (items) =>
+    items.reduce(
+        (sum, item) => sum + Number(item.quantity) * Number(item.price),
+        0
+    );
+
+const getPdfFontPath = () => {
+    const fontPaths = [
+        "C:\\Windows\\Fonts\\arial.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/Library/Fonts/Arial.ttf",
+    ];
+
+    return fontPaths.find((fontPath) => fs.existsSync(fontPath));
+};
+
 const generateOrderPdf = async (orderId) => {
     const orderResult = await pool.query(
         `SELECT 
@@ -50,44 +77,69 @@ const generateOrderPdf = async (orderId) => {
     );
 
     const order = orderResult.rows[0];
+    const calculatedTotal = calculateOrderTotal(itemsResult.rows);
+
+    if (Number(order.total_price) !== calculatedTotal) {
+        await pool.query(
+            `UPDATE orders
+             SET total_price = $1
+             WHERE id = $2`,
+            [calculatedTotal, order.id]
+        );
+
+        order.total_price = calculatedTotal;
+    }
+
+    order.total_price = formatMoney(calculatedTotal);
+
     const pdfDir = path.join(__dirname, "..", "pdfs");
     fs.mkdirSync(pdfDir, { recursive: true });
 
-    const pdfName = `order_${orderId}.pdf`;
+    const orderNumber = formatOrderNumber(order.id);
+    const pdfName = `invoice_${orderNumber}.pdf`;
     const pdfPath = path.join(pdfDir, pdfName);
     const doc = new PDFDocument({ margin: 48 });
+    const fontPath = getPdfFontPath();
+
+    if (fontPath) {
+        doc.registerFont("AppFont", fontPath);
+        doc.font("AppFont");
+    }
 
     doc.pipe(fs.createWriteStream(pdfPath));
-    doc.fontSize(22).text("Br1tuyHub Invoice", { align: "center" });
+    doc.fontSize(22).text("Рахунок Br1tuyHub", { align: "center" });
     doc.moveDown();
-    doc.fontSize(12).text(`Order #${order.id}`);
-    doc.text(`Date: ${new Date(order.created_at).toLocaleDateString("uk-UA")}`);
-    doc.text(`Status: ${order.status}`);
+    doc.fontSize(12).text(`Номер рахунку: ${orderNumber}`);
+    doc.text(`Дата оформлення: ${new Date(order.created_at).toLocaleDateString("uk-UA")}`);
+    doc.text(`Статус замовлення: ${statusLabels[order.status] || order.status}`);
     doc.moveDown();
-    doc.fontSize(14).text("Business");
+    doc.fontSize(14).text("Покупець");
     doc.fontSize(11).text(`${order.business_name || "-"} (${order.business_email || "-"})`);
-    doc.text(`Phone: ${order.business_phone || order.delivery_phone || "-"}`);
+    doc.text(`Телефон: ${order.business_phone || order.delivery_phone || "-"}`);
     doc.moveDown();
-    doc.fontSize(14).text("Supplier");
+    doc.fontSize(14).text("Постачальник");
     doc.fontSize(11).text(`${order.supplier_name || "-"} (${order.supplier_email || "-"})`);
-    doc.text(`Phone: ${order.supplier_phone || "-"}`);
+    doc.text(`Телефон: ${order.supplier_phone || "-"}`);
     doc.moveDown();
-    doc.fontSize(14).text("Delivery");
-    doc.fontSize(11).text(`Phone: ${order.delivery_phone || "-"}`);
-    doc.text(`Address: ${order.delivery_address || "-"}`);
-    if (order.delivery_comment) doc.text(`Comment: ${order.delivery_comment}`);
+    doc.fontSize(14).text("Доставка");
+    doc.fontSize(11).text(`Телефон для доставки: ${order.delivery_phone || "-"}`);
+    doc.text(`Адреса: ${order.delivery_address || "-"}`);
+    if (order.delivery_comment) doc.text(`Коментар: ${order.delivery_comment}`);
     doc.moveDown();
-    doc.fontSize(14).text("Items");
+    doc.fontSize(14).text("Товари");
     doc.moveDown(0.5);
 
     itemsResult.rows.forEach((item, index) => {
+        item.subtotal = formatMoney(Number(item.quantity) * Number(item.price));
+        item.price = formatMoney(item.price);
+
         doc.fontSize(11).text(
-            `${index + 1}. ${item.name} - ${item.quantity} ${item.unit} x ${item.price} UAH = ${item.subtotal} UAH`
+            `${index + 1}. ${item.name} - ${item.quantity} ${item.unit} x ${item.price} грн = ${item.subtotal} грн`
         );
     });
 
     doc.moveDown();
-    doc.fontSize(16).text(`Total: ${order.total_price} UAH`, { align: "right" });
+    doc.fontSize(16).text(`До сплати: ${order.total_price} грн`, { align: "right" });
     doc.end();
 
     return `/pdfs/${pdfName}`;
@@ -473,10 +525,31 @@ const getOrderDetails = async (req, res) => {
             });
         }
 
-        if (!canAccessOrder(req.user, order.rows[0])) {
+        let orderRow = order.rows[0];
+
+        if (!canAccessOrder(req.user, orderRow)) {
             return res.status(403).json({
                 message: "Access denied",
             });
+        }
+
+        if (
+            ["confirmed", "delivered"].includes(orderRow.status) &&
+            (!orderRow.pdf_url || orderRow.pdf_url.includes(`order_${id}.pdf`))
+        ) {
+            const pdfUrl = await generateOrderPdf(id);
+            const updatedOrder = await pool.query(
+                `UPDATE orders
+                 SET pdf_url = $1
+                 WHERE id = $2
+                 RETURNING *`,
+                [pdfUrl, id]
+            );
+
+            orderRow = {
+                ...orderRow,
+                ...updatedOrder.rows[0],
+            };
         }
 
         const items = await pool.query(
@@ -494,8 +567,30 @@ const getOrderDetails = async (req, res) => {
             [id]
         );
 
+        const detailsTotal = calculateOrderTotal(items.rows);
+
+        if (
+            ["confirmed", "delivered"].includes(orderRow.status) &&
+            Number(orderRow.total_price) !== detailsTotal
+        ) {
+            const pdfUrl = await generateOrderPdf(id);
+            const updatedOrder = await pool.query(
+                `UPDATE orders
+                 SET pdf_url = $1,
+                     total_price = $2
+                 WHERE id = $3
+                 RETURNING *`,
+                [pdfUrl, detailsTotal, id]
+            );
+
+            orderRow = {
+                ...orderRow,
+                ...updatedOrder.rows[0],
+            };
+        }
+
         res.json({
-            order: order.rows[0],
+            order: orderRow,
             items: items.rows,
         });
     } catch (error) {

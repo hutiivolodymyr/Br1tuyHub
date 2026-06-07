@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 
 const register = async (req, res) => {
     try {
-        const { company_name, email, password, phone, address, role } = req.body;
+        const { company_name, email, password, phone, address, region, role } = req.body;
 
         const allowedRoles = ["business", "supplier"];
 
@@ -47,10 +47,10 @@ const register = async (req, res) => {
 
         const newUser = await pool.query(
             `INSERT INTO users
-            (company_name, email, password, phone, address, role)
-            VALUES ($1, $2, $3, $4, $5, $6)
-            RETURNING id, company_name, email, phone, address, role, is_blocked, created_at`,
-            [company_name, email, hashedPassword, phone, address, role]
+            (company_name, email, password, phone, address, region, role)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            RETURNING id, company_name, email, phone, address, region, role, is_blocked, created_at`,
+            [company_name, email, hashedPassword, phone, address, region || "", role]
         );
 
         res.status(201).json({
@@ -122,6 +122,9 @@ const login = async (req, res) => {
                 id: user.rows[0].id,
                 company_name: user.rows[0].company_name,
                 email: user.rows[0].email,
+                phone: user.rows[0].phone,
+                address: user.rows[0].address,
+                region: user.rows[0].region,
                 role: user.rows[0].role,
             },
         });
@@ -137,7 +140,7 @@ const login = async (req, res) => {
 const getMe = async (req, res) => {
     try {
         const user = await pool.query(
-            `SELECT id, company_name, email, phone, address, role, is_blocked, created_at
+            `SELECT id, company_name, email, phone, address, region, role, is_blocked, created_at
              FROM users
              WHERE id = $1`,
             [req.user.id]

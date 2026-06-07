@@ -28,6 +28,10 @@ function ProductCard({ product, user, addToCart }) {
 
                 <p>{product.description}</p>
 
+                <p className="product-region">
+                    {product.supplier_region || "Регіон не вказано"}
+                </p>
+
                 <p className="price">
                     {product.price} грн / {product.unit}
                 </p>

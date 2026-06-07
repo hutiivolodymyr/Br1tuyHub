@@ -70,6 +70,11 @@ if (!product) {
                         {product.supplier_name}
                     </p>
 
+                    <p>
+                        <strong>Регіон постачальника:</strong>{" "}
+                        {product.supplier_region || "Не вказано"}
+                    </p>
+
                     {user?.role === "business" && (
                         <button onClick={() => addToCart(product)}>
                             Додати в кошик

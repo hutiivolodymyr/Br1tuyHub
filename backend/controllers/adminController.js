@@ -11,7 +11,7 @@ const getAdminPanel = async (req, res) => {
 const getAllUsers = async (req, res) => {
     try {
         const users = await pool.query(
-            `SELECT id, company_name, email, phone, address, role, is_blocked, created_at
+            `SELECT id, company_name, email, phone, address, region, role, is_blocked, created_at
              FROM users
              ORDER BY id DESC`
         );
@@ -61,7 +61,8 @@ const getAllProducts = async (req, res) => {
             `SELECT 
                 products.*,
                 categories.name AS category_name,
-                users.company_name AS supplier_name
+                users.company_name AS supplier_name,
+                users.region AS supplier_region
              FROM products
              LEFT JOIN categories ON products.category_id = categories.id
              LEFT JOIN users ON products.supplier_id = users.id

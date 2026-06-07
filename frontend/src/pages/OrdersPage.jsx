@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { ORDER_STATUSES, getStatusLabel } from "../utils/orderStatus";
+import { formatOrderNumber } from "../utils/orderNumber";
 
 function OrdersPage({
     orders,
@@ -38,7 +39,7 @@ function OrdersPage({
                 orders.map((order) => (
                     <div className="cart-item" key={order.id}>
                         <Link to={`/orders/${order.id}`}>
-                            Замовлення #{order.id}
+                            Замовлення {formatOrderNumber(order.id)}
                         </Link>
                         <span>{order.total_price} грн</span>
                         <span className={`status ${order.status}`}>

@@ -445,7 +445,7 @@ function App() {
                         path="/profile"
                         element={
                             <ProtectedRoute token={token}>
-                                <ProfilePage />
+                                <ProfilePage orders={orders} />
                             </ProtectedRoute>
                         }
                     />

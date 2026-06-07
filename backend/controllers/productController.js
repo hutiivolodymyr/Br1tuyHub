@@ -126,7 +126,8 @@ const getProducts = async (req, res) => {
             SELECT 
                 products.*,
                 categories.name AS category_name,
-                users.company_name AS supplier_name
+                users.company_name AS supplier_name,
+                users.region AS supplier_region
             FROM products
             LEFT JOIN categories 
                 ON products.category_id = categories.id
@@ -174,7 +175,8 @@ const getProductById = async (req, res) => {
                 categories.name AS category_name,
                 users.company_name AS supplier_name,
                 users.phone AS supplier_phone,
-                users.address AS supplier_address
+                users.address AS supplier_address,
+                users.region AS supplier_region
             FROM products
             LEFT JOIN categories 
                 ON products.category_id = categories.id

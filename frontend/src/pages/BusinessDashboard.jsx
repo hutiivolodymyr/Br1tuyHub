@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { getStatusLabel } from "../utils/orderStatus";
+import { formatOrderNumber } from "../utils/orderNumber";
 
 function BusinessDashboard({ orders }) {
     const activeOrders = orders.filter(
@@ -48,7 +49,7 @@ function BusinessDashboard({ orders }) {
                         <div className="order-card" key={order.id}>
                             <div className="order-header">
                                 <Link to={`/orders/${order.id}`}>
-                                    <h4>Замовлення #{order.id}</h4>
+                                    <h4>Замовлення {formatOrderNumber(order.id)}</h4>
                                 </Link>
 
                                 <span className={`status ${order.status}`}>

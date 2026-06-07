@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
 import Cart from "../components/Cart";
 
@@ -34,6 +33,7 @@ function HomePage({
 }) {
     const [search, setSearch] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("all");
+    const [onlyMyRegion, setOnlyMyRegion] = useState(false);
 
     const filteredProducts = products.filter((product) => {
         const matchesSearch = product.name
@@ -44,7 +44,12 @@ function HomePage({
             selectedCategory === "all" ||
             product.category_name === selectedCategory;
 
-        return matchesSearch && matchesCategory;
+        const matchesRegion =
+            !onlyMyRegion ||
+            !user?.region ||
+            product.supplier_region === user.region;
+
+        return matchesSearch && matchesCategory && matchesRegion;
     });
 
     const categories = [
@@ -231,7 +236,7 @@ function HomePage({
                     </p>
                 </div>
 
-                <div className="home-hero-cards">
+                <div className={user?.role === "supplier" ? "home-hero-cards supplier-hero-cards" : "home-hero-cards"}>
                     {user?.role === "supplier" ? (
                         <>
                             <div>
@@ -240,10 +245,10 @@ function HomePage({
                             </div>
 
                             <div>
-                                <Link to="/supplier" className="hero-card-link">
+                                <>
                                     <strong>↗</strong>
                                     <span>Кабінет постачальника</span>
-                                </Link>
+                                </>
                             </div>
                         </>
                     ) : (
@@ -282,6 +287,18 @@ function HomePage({
                         </option>
                     ))}
                 </select>
+
+                {user?.role === "business" && (
+                    <label className="region-filter">
+                        <input
+                            type="checkbox"
+                            checked={onlyMyRegion}
+                            disabled={!user?.region}
+                            onChange={(event) => setOnlyMyRegion(event.target.checked)}
+                        />
+                        Мій регіон
+                    </label>
+                )}
             </div>
 
             <div className="products-grid">

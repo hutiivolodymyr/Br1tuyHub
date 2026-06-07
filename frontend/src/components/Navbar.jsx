@@ -2,86 +2,82 @@ import { Link, NavLink } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
 
 const navClassName = ({ isActive }) =>
-    isActive ? "nav-link active" : "nav-link";
+    isActive ? "sidebar-link active" : "sidebar-link";
 
 function Navbar({ token, user, handleLogout }) {
     const { cart } = useCart();
-
-    const cartCount = cart.reduce(
-        (sum, item) => sum + item.quantity,
-        0
-    );
+    const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
     return (
-        <header className="navbar">
-            <Link to="/" className="logo">
-                Br1tuyHub
-            </Link>
+        <>
+            <aside className="sidebar">
+                <Link to="/" className="sidebar-logo">
+                    Br1tuyHub
+                </Link>
 
-            <nav className="nav-info" aria-label="Основна навігація">
-                <NavLink to="/" className={navClassName} end>
-                    Товари
-                </NavLink>
-
-                {user?.role === "business" && (
-                    <>
-                        <NavLink to="/business" className={navClassName}>
-                            Кабінет бізнесу
-                        </NavLink>
-
-                        <NavLink to="/favorites" className={navClassName}>
-                            Обране
-                        </NavLink>
-
-                        <NavLink to="/cart" className="cart-link" aria-label="Кошик">
-                            <span>Кошик</span>
-                            {cartCount > 0 && (
-                                <strong className="cart-badge">
-                                    {cartCount}
-                                </strong>
-                            )}
-                        </NavLink>
-                    </>
-                )}
-
-                {user?.role === "supplier" && (
-                    <NavLink to="/supplier" className={navClassName}>
-                        Кабінет постачальника
+                <nav className="sidebar-nav" aria-label="Основна навігація">
+                    <NavLink to="/" className={navClassName} end>
+                        Товари
                     </NavLink>
-                )}
 
-                {user?.role === "admin" && (
-                    <NavLink to="/admin" className={navClassName}>
-                        Адмін
-                    </NavLink>
-                )}
+                    {user?.role === "business" && (
+                        <>
+                            <NavLink to="/business" className={navClassName}>
+                                Кабінет бізнесу
+                            </NavLink>
+
+                            <NavLink to="/favorites" className={navClassName}>
+                                Обране
+                            </NavLink>
+
+                            <NavLink to="/cart" className={navClassName}>
+                                Кошик
+                                {cartCount > 0 && (
+                                    <span className="sidebar-badge">{cartCount}</span>
+                                )}
+                            </NavLink>
+                        </>
+                    )}
+
+                    {user?.role === "supplier" && (
+                        <NavLink to="/supplier" className={navClassName}>
+                            Кабінет постачальника
+                        </NavLink>
+                    )}
+
+                    {user?.role === "admin" && (
+                        <NavLink to="/admin" className={navClassName}>
+                            Адмін-панель
+                        </NavLink>
+                    )}
+
+                    {token && (
+                        <>
+                            <NavLink to="/orders" className={navClassName}>
+                                Замовлення
+                            </NavLink>
+
+                            <NavLink to="/profile" className={navClassName}>
+                                Профіль
+                            </NavLink>
+                        </>
+                    )}
+                </nav>
 
                 {token && (
-                    <>
-                        <NavLink to="/orders" className={navClassName}>
-                            Замовлення
-                        </NavLink>
-
-                        <NavLink to="/profile" className={navClassName}>
-                            Профіль
-                        </NavLink>
-                    </>
+                    <button className="sidebar-logout" onClick={handleLogout}>
+                        Вийти
+                    </button>
                 )}
-            </nav>
+            </aside>
 
-            {user && (
-                <div className="nav-account">
-                    <span>{user.company_name}</span>
-                    <strong>{user.role}</strong>
+            <header className="dashboard-topbar">
+                <div>
+                    <span>{user?.role || "account"}</span>
+                    <strong>{user?.company_name || "Br1tuyHub"}</strong>
                 </div>
-            )}
-
-            {token && (
-                <button className="logout-button" onClick={handleLogout}>
-                    Вийти
-                </button>
-            )}
-        </header>
+            </header>
+        </>
     );
 }
 
