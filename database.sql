@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 CREATE INDEX IF NOT EXISTS products_supplier_id_idx ON products(supplier_id);
 CREATE INDEX IF NOT EXISTS products_category_id_idx ON products(category_id);
 CREATE INDEX IF NOT EXISTS products_is_active_idx ON products(is_active);
+CREATE INDEX IF NOT EXISTS users_region_idx ON users(region);
 CREATE INDEX IF NOT EXISTS orders_business_id_idx ON orders(business_id);
 CREATE INDEX IF NOT EXISTS orders_supplier_id_idx ON orders(supplier_id);
 CREATE INDEX IF NOT EXISTS orders_status_idx ON orders(status);

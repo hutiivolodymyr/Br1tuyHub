@@ -1,6 +1,7 @@
 import { useState } from "react";
 import ProductCard from "../components/ProductCard";
 import Cart from "../components/Cart";
+import { UKRAINE_REGIONS } from "../utils/regions";
 
 function HomePage({
     token,
@@ -14,6 +15,8 @@ function HomePage({
     setCompanyName,
     setEmail,
     setPassword,
+    registrationRegion,
+    setRegistrationRegion,
     products,
     productPagination,
     fetchProducts,
@@ -33,7 +36,24 @@ function HomePage({
 }) {
     const [search, setSearch] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("all");
-    const [onlyMyRegion, setOnlyMyRegion] = useState(false);
+    const [selectedSupplierRegion, setSelectedSupplierRegion] = useState("all");
+
+    const getProductFilters = (supplierRegion = selectedSupplierRegion) => {
+        if (!supplierRegion || supplierRegion === "all") {
+            return {};
+        }
+
+        return {
+            supplier_region: supplierRegion,
+        };
+    };
+
+    const handleSupplierRegionChange = (event) => {
+        const nextRegion = event.target.value;
+
+        setSelectedSupplierRegion(nextRegion);
+        fetchProducts(1, getProductFilters(nextRegion));
+    };
 
     const filteredProducts = products.filter((product) => {
         const matchesSearch = product.name
@@ -45,9 +65,8 @@ function HomePage({
             product.category_name === selectedCategory;
 
         const matchesRegion =
-            !onlyMyRegion ||
-            !user?.region ||
-            product.supplier_region === user.region;
+            selectedSupplierRegion === "all" ||
+            product.supplier_region === selectedSupplierRegion;
 
         return matchesSearch && matchesCategory && matchesRegion;
     });
@@ -182,6 +201,21 @@ function HomePage({
                                             </button>
                                         </div>
 
+                                        <select
+                                            value={registrationRegion}
+                                            onChange={(e) =>
+                                                setRegistrationRegion(e.target.value)
+                                            }
+                                            required
+                                        >
+                                            <option value="">Оберіть область</option>
+                                            {UKRAINE_REGIONS.map((item) => (
+                                                <option key={item} value={item}>
+                                                    {item}
+                                                </option>
+                                            ))}
+                                        </select>
+
                                         <button className="auth-submit" type="submit">
                                             Зареєструватися
                                         </button>
@@ -289,15 +323,25 @@ function HomePage({
                 </select>
 
                 {user?.role === "business" && (
-                    <label className="region-filter">
-                        <input
-                            type="checkbox"
-                            checked={onlyMyRegion}
-                            disabled={!user?.region}
-                            onChange={(event) => setOnlyMyRegion(event.target.checked)}
-                        />
-                        Мій регіон
-                    </label>
+                    <select
+                        className="supplier-region-select"
+                        value={selectedSupplierRegion}
+                        onChange={handleSupplierRegionChange}
+                    >
+                        <option value="all">Усі області постачальників</option>
+                        {user?.region && (
+                            <option value={user.region}>
+                                Моя область: {user.region}
+                            </option>
+                        )}
+                        {UKRAINE_REGIONS
+                            .filter((item) => item !== user?.region)
+                            .map((item) => (
+                                <option key={item} value={item}>
+                                    {item}
+                                </option>
+                            ))}
+                    </select>
                 )}
             </div>
 
@@ -315,7 +359,10 @@ function HomePage({
             <div className="pagination-bar">
                 <button
                     disabled={productPagination.page <= 1}
-                    onClick={() => fetchProducts(productPagination.page - 1)}
+                    onClick={() => fetchProducts(
+                        productPagination.page - 1,
+                        getProductFilters()
+                    )}
                 >
                     Назад
                 </button>
@@ -326,7 +373,10 @@ function HomePage({
 
                 <button
                     disabled={productPagination.page >= (productPagination.totalPages || 1)}
-                    onClick={() => fetchProducts(productPagination.page + 1)}
+                    onClick={() => fetchProducts(
+                        productPagination.page + 1,
+                        getProductFilters()
+                    )}
                 >
                     Далі
                 </button>

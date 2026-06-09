@@ -102,6 +102,9 @@ const getProducts = async (req, res) => {
         const offset = (page - 1) * limit;
         const search = req.query.search || "";
         const categoryId = req.query.category_id;
+        const supplierRegion = typeof req.query.supplier_region === "string"
+            ? req.query.supplier_region.trim()
+            : "";
 
         const where = ["products.is_active = true"];
         const values = [];
@@ -116,8 +119,20 @@ const getProducts = async (req, res) => {
             where.push(`products.category_id = $${values.length}`);
         }
 
+        if (supplierRegion && supplierRegion !== "all") {
+            values.push(supplierRegion);
+            where.push(`users.region = $${values.length}`);
+        }
+
         const whereSql = where.join(" AND ");
         const countValues = [...values];
+        const productsFromSql = `
+            FROM products
+            LEFT JOIN categories
+                ON products.category_id = categories.id
+            LEFT JOIN users
+                ON products.supplier_id = users.id
+        `;
 
         values.push(limit, offset);
 
@@ -128,11 +143,7 @@ const getProducts = async (req, res) => {
                 categories.name AS category_name,
                 users.company_name AS supplier_name,
                 users.region AS supplier_region
-            FROM products
-            LEFT JOIN categories 
-                ON products.category_id = categories.id
-            LEFT JOIN users 
-                ON products.supplier_id = users.id
+            ${productsFromSql}
             WHERE ${whereSql}
             ORDER BY products.id DESC
             LIMIT $${values.length - 1}
@@ -142,7 +153,7 @@ const getProducts = async (req, res) => {
         );
 
         const total = await pool.query(
-            `SELECT COUNT(*) FROM products WHERE ${whereSql}`,
+            `SELECT COUNT(*) ${productsFromSql} WHERE ${whereSql}`,
             countValues
         );
 

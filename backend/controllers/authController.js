@@ -5,6 +5,8 @@ const jwt = require("jsonwebtoken");
 const register = async (req, res) => {
     try {
         const { company_name, email, password, phone, address, region, role } = req.body;
+        const normalizedEmail = typeof email === "string" ? email.trim() : email;
+        const normalizedRegion = typeof region === "string" ? region.trim() : "";
 
         const allowedRoles = ["business", "supplier"];
 
@@ -32,9 +34,15 @@ const register = async (req, res) => {
             });
         }
 
+        if (!normalizedRegion) {
+            return res.status(400).json({
+                message: "Region is required",
+            });
+        }
+
         const existingUser = await pool.query(
             "SELECT * FROM users WHERE email = $1",
-            [email]
+            [normalizedEmail]
         );
 
         if (existingUser.rows.length > 0) {
@@ -50,7 +58,15 @@ const register = async (req, res) => {
             (company_name, email, password, phone, address, region, role)
             VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING id, company_name, email, phone, address, region, role, is_blocked, created_at`,
-            [company_name, email, hashedPassword, phone, address, region || "", role]
+            [
+                company_name.trim(),
+                normalizedEmail,
+                hashedPassword,
+                phone,
+                address,
+                normalizedRegion,
+                role,
+            ]
         );
 
         res.status(201).json({

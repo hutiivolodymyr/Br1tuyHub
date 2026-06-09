@@ -34,13 +34,24 @@ function ProfilePage({ orders = [] }) {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+
+        if (!companyName.trim()) {
+            toast.error("Вкажіть назву компанії");
+            return;
+        }
+
+        if (!isAdmin && !region) {
+            toast.error("Оберіть область");
+            return;
+        }
+
         setIsSaving(true);
 
         try {
             const profilePayload = isAdmin
-                ? { company_name: companyName }
+                ? { company_name: companyName.trim() }
                 : {
-                    company_name: companyName,
+                    company_name: companyName.trim(),
                     phone,
                     address,
                     region,
@@ -90,6 +101,7 @@ function ProfilePage({ orders = [] }) {
                             <input
                                 type="text"
                                 value={companyName}
+                                required
                                 onChange={(event) => setCompanyName(event.target.value)}
                             />
                         ) : (
@@ -149,13 +161,14 @@ function ProfilePage({ orders = [] }) {
 
                     {!isAdmin && (
                     <label>
-                        {user?.role === "supplier" ? "Регіон роботи" : "Регіон доставки"}
+                        {user?.role === "supplier" ? "Область постачальника" : "Область бізнесу"}
                         {isEditing ? (
                             <select
                                 value={region}
+                                required
                                 onChange={(event) => setRegion(event.target.value)}
                             >
-                                <option value="">Оберіть регіон</option>
+                                <option value="">Оберіть область</option>
                                 {UKRAINE_REGIONS.map((item) => (
                                     <option key={item} value={item}>
                                         {item}

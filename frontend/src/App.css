@@ -255,7 +255,8 @@ body {
     gap: 16px;
 }
 
-.auth-form input {
+.auth-form input,
+.auth-form select {
     width: 100%;
     height: 58px;
     padding: 0 20px;
@@ -273,7 +274,8 @@ body {
     color: #8d8590;
 }
 
-.auth-form input:focus {
+.auth-form input:focus,
+.auth-form select:focus {
     border-color: #8a7784;
     background: white;
     box-shadow: 0 0 0 4px rgba(122, 102, 116, 0.12);
@@ -493,6 +495,10 @@ h2 {
 
 .filters select {
     width: 190px;
+}
+
+.filters .supplier-region-select {
+    width: 280px;
 }
 
 .products-grid {
@@ -934,7 +940,8 @@ h2 {
         font-size: 14px;
     }
 
-    .auth-form input {
+    .auth-form input,
+    .auth-form select {
         height: 52px;
         font-size: 14px;
     }
@@ -2026,6 +2033,7 @@ button:disabled {
 }
 
 .profile-single-form input,
+.profile-single-form select,
 .profile-single-form textarea {
     width: 100%;
     border: 1px solid #ded5d8;
@@ -2038,7 +2046,8 @@ button:disabled {
     outline: none;
 }
 
-.profile-single-form input {
+.profile-single-form input,
+.profile-single-form select {
     height: 52px;
     padding: 0 14px;
 }

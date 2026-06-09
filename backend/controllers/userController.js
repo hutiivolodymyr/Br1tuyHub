@@ -30,6 +30,30 @@ const getProfile = async (req, res) => {
 const updateProfile = async (req, res) => {
     try {
         const { company_name, phone, address, region } = req.body;
+        const normalizedCompanyName = typeof company_name === "string"
+            ? company_name.trim()
+            : company_name;
+        const normalizedRegion = typeof region === "string" ? region.trim() : "";
+        const nextRegion = region === undefined ? undefined : normalizedRegion;
+
+        if (
+            normalizedCompanyName !== undefined &&
+            normalizedCompanyName !== null &&
+            (
+                typeof normalizedCompanyName !== "string" ||
+                normalizedCompanyName.length < 2
+            )
+        ) {
+            return res.status(400).json({
+                message: "Company name is required",
+            });
+        }
+
+        if (req.user.role !== "admin" && !normalizedRegion) {
+            return res.status(400).json({
+                message: "Region is required",
+            });
+        }
 
         const updatedUser = await pool.query(
             `UPDATE users
@@ -39,7 +63,7 @@ const updateProfile = async (req, res) => {
                  region = COALESCE($4, region)
              WHERE id = $5
              RETURNING id, company_name, email, phone, address, region, role, is_blocked, created_at`,
-            [company_name, phone, address, region, req.user.id]
+            [normalizedCompanyName, phone, address, nextRegion, req.user.id]
         );
 
         if (updatedUser.rows.length === 0) {

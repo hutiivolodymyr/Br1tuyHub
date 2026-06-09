@@ -42,6 +42,7 @@ function App() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [role, setRole] = useState("business");
+    const [registrationRegion, setRegistrationRegion] = useState("");
 
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
@@ -67,16 +68,17 @@ function App() {
         setDeliveryAddress(user?.address || "");
     }, [user]);
 
-    const fetchProducts = useCallback(async (page = productPagination.page) => {
+    const fetchProducts = useCallback(async (page = 1, filters = {}) => {
         const response = await apiClient.get("/api/products", {
             params: {
                 page,
                 limit: 12,
+                ...filters,
             },
         });
         setProducts(response.data.products);
         setProductPagination(response.data.pagination || { page, totalPages: 1 });
-    }, [productPagination.page]);
+    }, []);
 
     const fetchCategories = useCallback(async () => {
         const response = await apiClient.get("/api/categories");
@@ -136,16 +138,23 @@ function App() {
     const handleRegister = async (e) => {
         e.preventDefault();
 
+        if (!registrationRegion) {
+            toast.error("Оберіть область компанії");
+            return;
+        }
+
         await apiClient.post("/api/auth/register", {
             company_name: companyName,
             email,
             password,
             phone: "",
             address: "",
+            region: registrationRegion,
             role,
         });
 
         toast.success("Реєстрація успішна");
+        setRegistrationRegion("");
         setMode("login");
     };
 
@@ -339,6 +348,8 @@ function App() {
                                 setEmail={setEmail}
                                 setPassword={setPassword}
                                 setRole={setRole}
+                                registrationRegion={registrationRegion}
+                                setRegistrationRegion={setRegistrationRegion}
                                 products={products}
                                 productPagination={productPagination}
                                 fetchProducts={fetchProducts}

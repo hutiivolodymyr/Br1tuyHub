@@ -50,6 +50,11 @@ const ensureSchema = async () => {
     `);
 
     await pool.query(`
+        CREATE INDEX IF NOT EXISTS users_region_idx
+        ON users (region)
+    `);
+
+    await pool.query(`
         ALTER TABLE orders
         ADD COLUMN IF NOT EXISTS delivery_phone VARCHAR(50),
         ADD COLUMN IF NOT EXISTS delivery_address TEXT,
