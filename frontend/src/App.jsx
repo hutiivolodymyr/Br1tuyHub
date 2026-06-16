@@ -33,6 +33,7 @@ function App() {
         totalPrice,
         increaseQuantity,
         decreaseQuantity,
+        updateQuantity,
     } = useCart();
 
     const [mode, setMode] = useState("login");
@@ -359,6 +360,7 @@ function App() {
                                 removeFromCart={removeFromCart}
                                 increaseQuantity={increaseQuantity}
                                 decreaseQuantity={decreaseQuantity}
+                                updateQuantity={updateQuantity}
                                 handleCheckout={handleCheckout}
                                 deliveryPhone={deliveryPhone}
                                 setDeliveryPhone={setDeliveryPhone}
@@ -387,6 +389,7 @@ function App() {
                                             removeFromCart={removeFromCart}
                                             increaseQuantity={increaseQuantity}
                                             decreaseQuantity={decreaseQuantity}
+                                            updateQuantity={updateQuantity}
                                             handleCheckout={handleCheckout}
                                             deliveryPhone={deliveryPhone}
                                             setDeliveryPhone={setDeliveryPhone}

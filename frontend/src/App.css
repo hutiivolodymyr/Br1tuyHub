@@ -615,13 +615,32 @@ h2 {
     flex-wrap: wrap;
 }
 
-.cart-item span:nth-child(2) {
+.cart-item-info {
+    min-width: 190px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.cart-item-info strong {
+    color: var(--text);
+}
+
+.cart-item-info span {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.cart-item-total {
+    min-width: 112px;
     font-weight: 900;
     color: var(--accent-dark);
     text-align: right;
 }
 
-.cart-item button {
+.cart-item-remove {
     background: var(--danger);
 }
 
@@ -642,6 +661,32 @@ h2 {
     height: 34px;
     padding: 0;
     border-radius: 10px;
+    background: #2c262d;
+}
+
+.quantity-controls input {
+    width: 82px;
+    height: 38px;
+    padding: 0 8px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: white;
+    color: var(--text);
+    font: inherit;
+    font-weight: 900;
+    text-align: center;
+    outline: none;
+}
+
+.quantity-controls input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(125, 111, 115, 0.12);
+}
+
+.quantity-controls span {
+    min-width: 28px;
+    color: var(--muted);
+    font-weight: 900;
 }
 
 .order-card {
@@ -2254,14 +2299,19 @@ body:has(.app:not(.auth-app)) {
 }
 
 .app:not(.auth-app) .danger-button,
-.app:not(.auth-app) .cart-item button,
+.app:not(.auth-app) .cart-item-remove,
 .app:not(.auth-app) .favorite-icon {
     box-shadow: none;
 }
 
 .app:not(.auth-app) .danger-button,
-.app:not(.auth-app) .cart-item button {
+.app:not(.auth-app) .cart-item-remove {
     background: #b84646;
+}
+
+.app:not(.auth-app) .quantity-controls button {
+    border-radius: 10px;
+    background: linear-gradient(135deg, #2c262d 0%, #453d46 100%);
 }
 
 .app:not(.auth-app) .products-grid {

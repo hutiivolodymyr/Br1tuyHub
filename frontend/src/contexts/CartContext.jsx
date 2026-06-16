@@ -13,6 +13,14 @@ export function CartProvider({ children }) {
         localStorage.setItem("cart", JSON.stringify(cart));
     }, [cart]);
 
+    const parseQuantity = (quantity) => {
+        if (typeof quantity === "string") {
+            return Number(quantity.replace(",", "."));
+        }
+
+        return Number(quantity);
+    };
+
     const addToCart = (product) => {
         const existingItem = cart.find((item) => item.id === product.id);
         const availableQuantity = Number(product.quantity_available);
@@ -36,10 +44,15 @@ export function CartProvider({ children }) {
                 return;
             }
 
+            const nextQuantity = Math.min(
+                Number(existingItem.quantity) + 1,
+                availableQuantity
+            );
+
             setCart(
                 cart.map((item) =>
                     item.id === product.id
-                        ? { ...item, quantity: item.quantity + 1 }
+                        ? { ...item, quantity: nextQuantity }
                         : item
                 )
             );
@@ -57,7 +70,13 @@ export function CartProvider({ children }) {
             cart.map((item) =>
                 item.id === productId &&
                 item.quantity < Number(item.quantity_available)
-                    ? { ...item, quantity: item.quantity + 1 }
+                    ? {
+                        ...item,
+                        quantity: Math.min(
+                            Number(item.quantity) + 1,
+                            Number(item.quantity_available)
+                        ),
+                    }
                     : item
             )
         );
@@ -67,7 +86,45 @@ export function CartProvider({ children }) {
         setCart(
             cart.map((item) =>
                 item.id === productId && item.quantity > 1
-                    ? { ...item, quantity: item.quantity - 1 }
+                    ? { ...item, quantity: Math.max(Number(item.quantity) - 1, 1) }
+                    : item
+            )
+        );
+    };
+
+    const updateQuantity = (productId, quantity) => {
+        const nextQuantity = parseQuantity(quantity);
+
+        if (!Number.isFinite(nextQuantity)) {
+            return;
+        }
+
+        const cartItem = cart.find((item) => item.id === productId);
+
+        if (!cartItem) {
+            return;
+        }
+
+        const availableQuantity = Number(cartItem.quantity_available);
+
+        if (!Number.isFinite(availableQuantity) || availableQuantity <= 0) {
+            toast.error("Цього товару немає в наявності");
+            return;
+        }
+
+        if (nextQuantity > availableQuantity) {
+            toast.error("Недостатньо товару на складі");
+        }
+
+        const clampedQuantity = Math.min(
+            Math.max(nextQuantity, 1),
+            availableQuantity
+        );
+
+        setCart(
+            cart.map((item) =>
+                item.id === productId
+                    ? { ...item, quantity: clampedQuantity }
                     : item
             )
         );
@@ -92,6 +149,7 @@ export function CartProvider({ children }) {
                 removeFromCart,
                 increaseQuantity,
                 decreaseQuantity,
+                updateQuantity,
                 clearCart,
                 totalPrice,
             }}

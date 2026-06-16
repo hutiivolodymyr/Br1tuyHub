@@ -26,6 +26,7 @@ function HomePage({
     removeFromCart,
     increaseQuantity,
     decreaseQuantity,
+    updateQuantity,
     handleCheckout,
     deliveryPhone,
     setDeliveryPhone,
@@ -390,6 +391,7 @@ function HomePage({
                     handleCheckout={handleCheckout}
                     increaseQuantity={increaseQuantity}
                     decreaseQuantity={decreaseQuantity}
+                    updateQuantity={updateQuantity}
                     deliveryPhone={deliveryPhone}
                     setDeliveryPhone={setDeliveryPhone}
                     deliveryAddress={deliveryAddress}
